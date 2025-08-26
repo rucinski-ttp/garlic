@@ -1,19 +1,27 @@
-# Build outputs
+# Zephyr build directories
 app/build/
 build/
+**/build/
+
+# Build outputs
 *.o
 *.a
 *.elf
 *.bin
 *.hex
 *.map
+*.lst
+*.dis
 
-# West/Zephyr managed directories
-zephyr/
+# West/Zephyr managed directories (cloned by west)
 modules/
 tools/
 bootloader/
 .west/
+
+# Note: We're keeping the zephyr/ directory in git since it's part of the workspace
+# But ignore any build directories within it
+zephyr/build*/
 
 # Python
 __pycache__/
@@ -24,22 +32,48 @@ __pycache__/
 *.egg-info/
 venv/
 .venv/
+zephyr-venv/
 
-# IDE
+# IDE and editors
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
 .DS_Store
+.cache/
+.clangd/
+compile_commands.json
 
-# Debug files
+# Debug and log files
 *.log
 *.jlink
 *.gdbinit
 .gdb_history
+openocd.log
+/tmp/flash.jlink
 
-# Backup files
+# Backup and temporary files
 *.bak
 *.old
 *.orig
+*.tmp
+*.lock
+
+# Coverage and test reports
+coverage/
+*.gcov
+*.gcda
+*.gcno
+test-results/
+
+# OS specific
+Thumbs.db
+.Trash-*
+
+# Documentation build
+docs/_build/
+*.pdf
+
+# Zephyr SDK (should be installed separately by developers)
+zephyr-sdk*/
