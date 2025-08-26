@@ -1,0 +1,45 @@
+# Build outputs
+app/build/
+build/
+*.o
+*.a
+*.elf
+*.bin
+*.hex
+*.map
+
+# West/Zephyr managed directories
+zephyr/
+modules/
+tools/
+bootloader/
+.west/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+venv/
+.venv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Debug files
+*.log
+*.jlink
+*.gdbinit
+.gdb_history
+
+# Backup files
+*.bak
+*.old
+*.orig
