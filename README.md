@@ -8,7 +8,7 @@ This repository demonstrates embedded development using AI agents. The project i
 
 - **Board**: Nordic nRF52-DK (nRF52832)
 - **Framework**: Zephyr RTOS
-- **Current Application**: LED Blinky at 3Hz with serial output
+- **Current Application**: UART DMA echo + 1Hz status (LED blinks)
 - **Purpose**: Demonstrate AI agent capability for embedded development
 
 ## 🚀 Quick Start
@@ -17,14 +17,14 @@ This repository demonstrates embedded development using AI agents. The project i
 # 1. Clone and setup (if not already done)
 ./scripts/setup.sh
 
-# 2. Build the application
-./scripts/build.sh
+# 2. Build + flash the application
+./scripts/build.sh && ./scripts/flash.sh
 
-# 3. Flash to board
-./scripts/flash.sh
+# 3. (Optional) Monitor serial output via UART
+./scripts/monitor.sh 115200 /dev/ttyACM0
 
-# 4. Monitor serial output
-./scripts/monitor.sh
+# 4. (Optional) Run hardware tests (auto-detects port)
+./scripts/test_integration.sh
 ```
 
 ## 📁 Project Structure
@@ -33,7 +33,7 @@ This repository demonstrates embedded development using AI agents. The project i
 garlic/
 ├── app/                    # Application source code
 │   ├── src/
-│   │   └── main.c         # Main application (LED blinky)
+│   │   └── app/main.c     # Main application (UART DMA echo/status)
 │   ├── CMakeLists.txt     # CMake configuration
 │   ├── prj.conf           # Zephyr configuration
 │   └── build/             # Build output (git-ignored)
@@ -42,13 +42,24 @@ garlic/
 │   ├── source.sh         # Environment variables
 │   ├── build.sh          # Build application
 │   ├── flash.sh          # Flash to board
-│   └── monitor.sh        # Serial monitor
+│   ├── monitor.sh        # Serial monitor
+│   ├── check_format.sh   # Check code formatting
+│   ├── fix_format.sh     # Auto-fix code formatting
+│   └── format.sh         # Combined formatting tool
+│   └── test_integration.sh # Build, flash, run pytest hardware tests
 ├── docs/                  # Additional documentation
 ├── zephyr/               # Zephyr RTOS source
 └── modules/              # External modules (git-ignored)
 ```
 
 ## 🛠️ Development Workflow
+
+### Code Formatting
+```bash
+./scripts/check_format.sh   # Check if code is properly formatted
+./scripts/fix_format.sh     # Auto-fix formatting issues
+./scripts/format.sh         # Combined tool with multiple options
+```
 
 ### Building
 ```bash
@@ -71,6 +82,12 @@ garlic/
 ./scripts/monitor.sh 115200 /dev/ttyACM0  # Specify port
 ```
 
+### Capture UART logs
+```bash
+# Save UART output to a log file while echoing to stdout
+python3 scripts/uart_capture.py --port /dev/ttyUSB0 --baud 115200 --outfile logs/uart_$(date +%s).log
+```
+
 ## 🤖 AI Agent Instructions
 
 ### Key Information
@@ -82,7 +99,7 @@ garlic/
 ### Common Tasks
 
 #### Modify the Application
-1. Edit `app/src/main.c`
+1. Edit `app/src/app/main.c`
 2. Run `./scripts/build.sh`
 3. Run `./scripts/flash.sh`
 4. Verify with `./scripts/monitor.sh`
@@ -102,7 +119,14 @@ The `scripts/source.sh` script sets up:
 - Zephyr SDK at `~/tools/zephyr-global/zephyr-sdk-0.16.8`
 - PATH and environment variables
 
-### Troubleshooting
+### Testing & Troubleshooting
+
+#### Unit tests (host)
+```bash
+cmake -S tests/unit -B tests/unit/build -DCMAKE_BUILD_TYPE=Release
+cmake --build tests/unit/build -j
+ctest --test-dir tests/unit/build --output-on-failure
+```
 
 #### Board Not Detected
 - Check USB connection
@@ -117,6 +141,7 @@ The `scripts/source.sh` script sets up:
 #### Build Issues
 - Clean build: `./scripts/build.sh clean`
 - Ensure environment is sourced: `source scripts/source.sh`
+- Warnings are treated as errors (CONFIG_COMPILER_WARNINGS_AS_ERRORS=y)
 
 ## 🎯 Next Development Goals
 

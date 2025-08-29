@@ -23,8 +23,18 @@ FLASHER=${1:-openocd}
 # Change to app directory
 cd /projects/garlic/app
 
+# Resolve build directory
+BUILD_DIR=${GARLIC_BUILD_DIR:-build}
+
+# Prepare flash log file (fall back to /tmp if needed)
+mkdir -p build 2>/dev/null || true
+LOGFILE="build/flash.log"
+if ! touch "$LOGFILE" 2>/dev/null; then
+    LOGFILE=$(mktemp /tmp/garlic_flash.XXXXXX.log)
+fi
+
 # Check if hex file exists
-if [ ! -f build/zephyr/zephyr.hex ]; then
+if [ ! -f "${BUILD_DIR}/zephyr/zephyr.hex" ]; then
     echo -e "${RED}Error: zephyr.hex not found!${NC}"
     echo "Please run ./scripts/build.sh first"
     exit 1
@@ -62,12 +72,14 @@ case $FLASHER in
         if openocd -f interface/jlink.cfg \
                    -c "transport select swd" \
                    -f target/nrf52.cfg \
-                   -c "program build/zephyr/zephyr.hex verify reset exit" 2>&1 | tee /tmp/flash.log; then
+                   -c "program ${BUILD_DIR}/zephyr/zephyr.hex verify reset exit" 2>&1 | tee "$LOGFILE"; then
             echo -e "${GREEN}✓ Flash successful with OpenOCD!${NC}"
         else
             echo -e "${RED}✗ OpenOCD flash failed!${NC}"
-            echo "Check /tmp/flash.log for details"
-            exit 1
+            echo "Check $LOGFILE for details"
+            echo -e "${YELLOW}Falling back to JLink...${NC}"
+            FLASHER=jlink
+            # Fall through to jlink case
         fi
         ;;
     
@@ -114,19 +126,19 @@ case $FLASHER in
         fi
         
         # Create JLink script
-        cat > /tmp/flash.jlink <<EOF
+        cat > build/flash.jlink <<EOF
 device NRF52832_XXAA
 si SWD
 speed 4000
 connect
 h
-loadfile build/zephyr/zephyr.hex
+loadfile ${BUILD_DIR}/zephyr/zephyr.hex
 r
 g
 exit
 EOF
         
-        if JLinkExe -CommandFile /tmp/flash.jlink; then
+        if JLinkExe -CommandFile build/flash.jlink; then
             echo -e "${GREEN}✓ Flash successful with JLink!${NC}"
         else
             echo -e "${RED}✗ JLink flash failed!${NC}"
