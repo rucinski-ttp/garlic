@@ -24,7 +24,13 @@ jobs:
           python3 -m venv venv
           . venv/bin/activate
           python -m pip install --upgrade pip
-          pip install -r "$GITHUB_WORKSPACE/zephyr/scripts/requirements.txt"
+          # Ensure west workspace exists so Zephyr tree (and scripts/requirements.txt) is present
+          source scripts/source.sh
+          if [ ! -d .west ]; then
+            west init -l app/
+            west update --narrow -o=--depth=1
+          fi
+          pip install -r zephyr/scripts/requirements.txt
 
       - name: Check formatting (clang-format)
         shell: bash
