@@ -97,21 +97,22 @@ def run_jlink_logger(args, out_path: Path) -> int:
         return 127
     info("Using J-Link RTT Logger backend")
 
-    # JLinkRTTLogger typically requires a file; we still tee to stdout ourselves.
-    # Many versions accept -Device/-If/-Speed/-RTTChannel/-FileName.
-    cmd = [
-        exe,
-        "-Device",
-        args.device,
-        "-If",
-        "SWD",
-        "-Speed",
-        str(args.speed),
-        "-RTTChannel",
-        str(args.channel),
-        "-FileName",
-        str(out_path),
-    ]
+    # JLinkRTTLogger requires target selection and can benefit from an explicit RTT address.
+    # Many versions accept -Device/-If/-Speed/-RTTChannel/-RTTAddress/-FileName.
+    cmd = [exe, "-Device", args.device, "-If", "SWD", "-Speed", str(args.speed), "-RTTChannel", str(args.channel)]
+
+    # Try to resolve _SEGGER_RTT address from the current ELF and pass it to the logger for reliability.
+    elf = _find_elf(None)
+    if elf:
+        addr = _resolve_rtt_addr(elf)
+        if addr:
+            # Ensure 0x prefix
+            if not addr.startswith("0x") and not addr.startswith("0X"):
+                addr = "0x" + addr
+            cmd += ["-RTTAddress", addr]
+            info(f"Using RTT address {addr} from {elf}")
+
+    cmd += ["-FileName", str(out_path)]
 
     info("Starting JLinkRTTLogger; press Ctrl-C to stop")
     try:

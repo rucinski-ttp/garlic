@@ -18,11 +18,25 @@ jobs:
           cmake --version || true
           ninja --version || true
 
-      - name: Check formatting
+      - name: Install Zephyr Python deps (venv)
         shell: bash
         run: |
-          chmod +x scripts/*.sh
-          ./scripts/check_format.sh
+          python3 -m venv venv
+          . venv/bin/activate
+          python -m pip install --upgrade pip
+          # Ensure west workspace exists so Zephyr tree (and scripts/requirements.txt) is present
+          source scripts/source.sh
+          if [ ! -d .west ]; then
+            west init -l app/
+            west update --narrow -o=--depth=1
+          fi
+          pip install -r zephyr/scripts/requirements.txt
+
+      - name: Check formatting (clang-format)
+        shell: bash
+        run: |
+          source scripts/source.sh
+          ./scripts/format.sh check
 
       - name: Build Zephyr app (nRF52DK)
         shell: bash
@@ -30,6 +44,15 @@ jobs:
           source scripts/source.sh
           export GARLIC_BUILD_DIR=build-ci-${{ github.run_id }}
           ./scripts/build.sh clean
+
+      - name: Clang-Tidy (unit compile DB)
+        shell: bash
+        run: |
+          if command -v clang-tidy >/dev/null 2>&1; then
+            ./scripts/format.sh tidy
+          else
+            echo "clang-tidy not found on runner; skipping."
+          fi
 
       - name: Run unit tests
         shell: bash

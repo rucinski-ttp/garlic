@@ -12,7 +12,8 @@ YELLOW='\033[0;33m'
 NC='\033[0m' # No Color
 
 # Source environment
-SCRIPT_DIR="$(dirname "$0")"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+ROOT_DIR="${SCRIPT_DIR}/.."
 source "${SCRIPT_DIR}/source.sh"
 
 # Parse arguments
@@ -34,8 +35,18 @@ esac
 
 BUILD_DIR=${GARLIC_BUILD_DIR:-build}
 
+# Ensure west workspace is initialized (run from repo root)
+if [ ! -d "${ROOT_DIR}/.west" ]; then
+    echo -e "${YELLOW}Initializing West workspace (missing .west)...${NC}"
+    (
+      cd "${ROOT_DIR}" && \
+      west init -l app/ && \
+      west update --narrow -o=--depth=1
+    )
+fi
+
 # Change to app directory
-cd /projects/garlic/app
+cd "${ROOT_DIR}/app"
 
 # Check if west is available
 if ! command -v west &> /dev/null; then

@@ -37,14 +37,45 @@ echo ""
 
 # Find all C/C++ source files
 find_source_files() {
-    find app -type f \( -name "*.c" -o -name "*.h" -o -name "*.cpp" -o -name "*.hpp" \) \
-        ! -path "*/build/*" \
-        ! -path "*/.git/*" \
-        ! -path "*/zephyr/*" \
-        ! -path "*/modules/*" | sort
+    if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+        git ls-files -- app \
+            | grep -E '\.(c|h|cpp|hpp)$' \
+            | sort
+    else
+        find app -type f \( -name "*.c" -o -name "*.h" -o -name "*.cpp" -o -name "*.hpp" \) \
+            ! -path "*/build/*" \
+            ! -path "*/build-*/*" \
+            ! -path "*/build-ci-*/*" \
+            ! -path "*/.git/*" \
+            ! -path "*/zephyr/*" \
+            ! -path "*/modules/*" | sort
+    fi
 }
 
 case "$MODE" in
+    tidy)
+        echo -e "${YELLOW}Running clang-tidy (unit compile DB)...${NC}"
+        if ! command -v clang-tidy >/dev/null 2>&1; then
+            echo -e "${RED}Error: clang-tidy not found${NC}"
+            echo "Install it (e.g., sudo apt-get install clang-tidy) and re-run."
+            exit 1
+        fi
+        # Ensure unit compile database exists
+        if [ ! -f "tests/unit/build/compile_commands.json" ]; then
+            echo -e "${YELLOW}Building unit tests to generate compile_commands.json...${NC}"
+            cmake -S tests/unit -B tests/unit/build -DCMAKE_BUILD_TYPE=Release -DCMAKE_EXPORT_COMPILE_COMMANDS=ON >/dev/null
+            cmake --build tests/unit/build -j >/dev/null
+        fi
+        DB="tests/unit/build"
+        echo "Using compile database: $DB"
+        # Tidy only our project code referenced by unit build (proto, commands, utils)
+        FILES=$(jq -r '.[].file' "$DB/compile_commands.json" | grep -E '/app/src/(proto|commands|utils)/' | sort -u)
+        if [ -z "$FILES" ]; then
+            echo "No relevant sources found in compile database."
+            exit 0
+        fi
+        clang-tidy -p "$DB" $FILES
+        ;;
     check)
         echo -e "${YELLOW}Checking code formatting...${NC}"
         echo "Files to check:"

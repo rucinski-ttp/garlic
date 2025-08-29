@@ -1,3 +1,3 @@
-zephyr_library()
-zephyr_library_sources(src/circular_buffer.c)
-zephyr_library_include_directories(${CMAKE_CURRENT_LIST_DIR}/inc)
+# Circular buffer module (compiled into app target)
+target_sources(app PRIVATE ${CMAKE_CURRENT_LIST_DIR}/src/circular_buffer.c)
+target_include_directories(app PRIVATE ${CMAKE_CURRENT_LIST_DIR}/inc)

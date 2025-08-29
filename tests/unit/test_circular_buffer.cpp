@@ -12,7 +12,7 @@
 
 // Include the C header only; link implementation via CMake
 extern "C" {
-#include "circular_buffer.h"
+#include "utils/circular_buffer/inc/circular_buffer.h"
 }
 
 using ::testing::ElementsAre;

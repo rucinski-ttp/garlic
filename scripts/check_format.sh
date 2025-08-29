@@ -17,58 +17,21 @@ NC='\033[0m' # No Color
 PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$PROJECT_ROOT"
 
-# Check if clang-format is installed
-if ! command -v clang-format &> /dev/null; then
-    echo -e "${RED}Error: clang-format is not installed!${NC}"
-    echo "Install it with:"
-    echo "  Ubuntu/Debian: sudo apt-get install clang-format"
-    echo "  macOS: brew install clang-format"
-    exit 1
-fi
-
-# Show clang-format version
-echo -e "${BLUE}Checking code format with: $(clang-format --version | head -n1)${NC}"
-echo ""
-
-# Find all C/C++ source files
-FILES=$(find app -type f \( -name "*.c" -o -name "*.h" -o -name "*.cpp" -o -name "*.hpp" \) \
-    ! -path "*/build/*" \
-    ! -path "*/.git/*" \
-    ! -path "*/zephyr/*" \
-    ! -path "*/modules/*" | sort)
-
-if [ -z "$FILES" ]; then
-    echo -e "${YELLOW}No source files found to check${NC}"
-    exit 0
-fi
-
-echo "Checking files:"
-FAILED=0
-FAILED_FILES=""
-
-for file in $FILES; do
-    printf "  %-50s " "$file"
-    if clang-format --dry-run --Werror "$file" 2>/dev/null; then
-        echo -e "${GREEN}✓ OK${NC}"
+# Prefer running the CMake format-check target for consistency with CI
+if command -v cmake >/dev/null 2>&1; then
+    echo -e "${BLUE}Running CMake format-check target...${NC}"
+    # Prepare build system
+    (cd app && cmake -S . -B build -G Ninja >/dev/null)
+    if cmake --build app/build --target format-check; then
+        echo -e "${GREEN}✓ All files are properly formatted!${NC}"
+        exit 0
     else
-        echo -e "${RED}✗ NEEDS FORMATTING${NC}"
-        FAILED=1
-        FAILED_FILES="$FAILED_FILES\n    $file"
+        echo -e "${RED}✗ Format check failed!${NC}"
+        echo "To fix formatting, you can run:"
+        echo "  cmake --build app/build --target format"
+        exit 1
     fi
-done
-
-echo ""
-echo "----------------------------------------"
-if [ $FAILED -eq 0 ]; then
-    echo -e "${GREEN}✓ All files are properly formatted!${NC}"
-    echo "----------------------------------------"
-    exit 0
-else
-    echo -e "${RED}✗ Format check failed!${NC}"
-    echo -e "${RED}Files needing formatting:${NC}$FAILED_FILES"
-    echo ""
-    echo "To fix formatting, run:"
-    echo -e "  ${YELLOW}./scripts/fix_format.sh${NC}"
-    echo "----------------------------------------"
-    exit 1
 fi
+
+echo -e "${YELLOW}cmake not available; falling back to script-based check${NC}"
+"$(dirname "$0")/format.sh" check
