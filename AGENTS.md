@@ -8,6 +8,7 @@ Welcome! This document orients AI agents (and humans) to the Garlic nRF52-DK pro
 - RTOS: Zephyr 3.7
 - Goal: DMA-based, non-blocking UART using a circular buffer, tested with unit tests (GTest) and hardware pytest.
 - Debug/logging: RTT enabled; UART used for data path and status messages.
+- Protocol: Layered serial command stack (UART DMA → Transport → Commands), documented in docs/PROTOCOL.md
 
 ## Code Layout
 
@@ -29,8 +30,11 @@ Welcome! This document orients AI agents (and humans) to the Garlic nRF52-DK pro
 
 - No dynamic allocation in firmware code paths
 - Treat warnings as errors: `CONFIG_COMPILER_WARNINGS_AS_ERRORS=y`
-- Clang-format enforced; CI checks formatting
+- Style + static analysis:
+  - Clang-format enforced for C/C++ style. CI runs a formatting check and fails on diffs.
+  - Clang-tidy enforced in CI (e.g., `readability-braces-around-statements`). CI does not apply fixes; it fails if issues are found.
 - All code must be unit-tested; DMA UART also validated by hardware pytest
+- Doxygen: Public headers and functions must include @brief/@param/@return documentation
 
 ## Environment & Build
 
@@ -69,6 +73,7 @@ This runs with `--run-hardware` and exercises:
 - Echo per line
 - TX/RX counters
 - Continuous data stream handling
+- Upcoming: transport framing and command handlers via Python client classes
 
 ## DMA UART Behavior
 
@@ -81,10 +86,29 @@ This runs with `--run-hardware` and exercises:
 - Workflow: `.github/workflows/ci.yml`
 - Runner: `dell-runner` (local GitHub runner installed on laptop)
 - Steps:
-  - clang-format check
+  - clang-format check (no auto-fix)
   - Build Zephyr app
   - Run unit tests
   - Upload binaries as artifacts
+
+Clang-tidy also runs after build in CI and will fail on violations (WarningsAsErrors). CI never applies tidy fixes.
+
+## Formatting & Tidy Workflow
+
+To ensure local results match CI:
+
+- Check formatting only:
+  - `./scripts/format.sh check`
+- Auto-fix formatting:
+  - `./scripts/format.sh fix`
+- Run clang-tidy checks (read-only):
+  - `./scripts/format.sh tidy`
+- Auto-apply clang-tidy fixes, then reformat:
+  - `./scripts/format.sh tidy-fix` followed by `./scripts/format.sh fix`
+
+Notes:
+- Clang-tidy uses `.clang-tidy` and the unit test compile database. The script builds `tests/unit` to generate `compile_commands.json` automatically.
+- CI is intentionally non-destructive: it does not apply fixes, only reports failures. Developers must run `tidy-fix` and `fix` locally before pushing.
 
 ## Common Pitfalls
 
@@ -107,9 +131,29 @@ This runs with `--run-hardware` and exercises:
 
 Note: A previous experimental script was moved to `scripts/legacy/rtt_monitor.py`.
 
+## Protocol
+
+- Transport: framed, CRC32-verified, supports fragmentation and reassembly (no retransmissions). See docs/PROTOCOL.md.
+- Commands: request/response with status and optional payload; each command in its own module under `app/src/app/commands/`.
+
+## Pytest Structure
+
+- Keep fixtures under `tests/integration/fixtures/` (serial, RTT, debug probe, clients)
+- Tests under `tests/integration/` import fixtures; `conftest.py` focuses on options and hardware gating
+
 ## Contributing Tips for Agents
 
 - Respect code style: run `./scripts/format.sh fix` before PRs.
 - Keep changes focused; update docs and scripts as needed.
 - Add tests for new functionality; avoid regressions.
 - For bring-up or experiments, place one-offs under `app/src/app/examples/` and keep the main build clean.
+
+## PR Policy
+
+- Squash Rebase: All pull requests are squash-rebased onto `origin/main` before merge. Prefer a single, well-curated commit that captures the feature/fix.
+- Non-Interactive: Use a non-interactive squash rebase (no interactive editor steps) to keep automation friendly.
+- Formatting Required: clang-format must be clean prior to PR. Locally verify with either:
+  - `cmake -S app -B app/build && cmake --build app/build --target format-check`, or
+  - `./scripts/format.sh check` (and `./scripts/format.sh fix` if needed).
+- Tests: Ensure unit tests pass locally. For hardware changes, run the integration pytest suite when feasible.
+- CI Clean: PRs should be green on CI (format, build, unit tests).

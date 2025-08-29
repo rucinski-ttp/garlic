@@ -3,7 +3,6 @@
 #ifndef UART_DMA_H
 #define UART_DMA_H
 
-#include <zephyr/device.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>

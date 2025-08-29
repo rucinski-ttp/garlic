@@ -2,6 +2,8 @@
 app/build/
 build/
 **/build/
+**/build-*/
+app/build-*/
 
 # Build outputs
 *.o
@@ -47,6 +49,7 @@ compile_commands.json
 
 # Debug and log files
 *.log
+logs/
 *.jlink
 *.gdbinit
 .gdb_history
@@ -77,3 +80,7 @@ docs/_build/
 
 # Zephyr SDK (should be installed separately by developers)
 zephyr-sdk*/
+
+# Local dev helpers and stray files
+.codex/
+-FileName

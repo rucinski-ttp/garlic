@@ -25,9 +25,17 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 source "${SCRIPT_DIR}/source.sh" >/dev/null 2>&1 || true
 
 cd "${SCRIPT_DIR}/.."
-echo "Running pytest integration tests (J-Link RTT)..."
-if [[ -n "${PORT}" ]]; then
-  pytest -q tests/integration --run-hardware --garlic-port "${PORT}" --garlic-rtt-tool jlink -s
-else
-  pytest -q tests/integration --run-hardware --garlic-rtt-tool jlink -s
+
+# Ensure integration test dependencies are installed in the venv
+if [ -f "tests/integration/requirements.txt" ]; then
+  echo "Installing integration test dependencies..."
+  pip install -r tests/integration/requirements.txt >/dev/null
 fi
+echo "Running pytest integration tests (J-Link RTT)..."
+# Prefer J-Link RTT Logger for early boot capture reliability
+PYTEST_OPTS=( -q tests/integration --run-hardware --garlic-rtt-tool jlink )
+if [[ -n "${PORT}" ]]; then
+  PYTEST_OPTS+=( --garlic-port "${PORT}" )
+fi
+# Default to concise output; use -vv locally if you need more detail
+pytest "${PYTEST_OPTS[@]}"

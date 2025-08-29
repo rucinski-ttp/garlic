@@ -62,3 +62,22 @@ The board may cause USB timeouts when connected for extended periods. This affec
 - Version: 1.7.2
 - Processes device tree files
 - Required for hardware configuration
+
+## Code Quality Tools
+
+### clang-format
+- Purpose: Enforce code style
+- Config: `.clang-format`
+- Local usage:
+  - `./scripts/format.sh check` — check only (used by CI)
+  - `./scripts/format.sh fix` — apply formatting
+
+### clang-tidy
+- Purpose: Static analysis and readability rules (e.g., require braces)
+- Config: `.clang-tidy` (WarningsAsErrors enabled for project paths)
+- Compile DB: Generated from `tests/unit` build by the script
+- Local usage:
+  - `./scripts/format.sh tidy` — check only
+  - `./scripts/format.sh tidy-fix` — apply fixes, then run clang-format
+
+CI Behavior: CI does not auto-fix. It runs clang-format check and clang-tidy, failing if violations are present. Developers are expected to run `tidy-fix` + `fix` locally before pushing.

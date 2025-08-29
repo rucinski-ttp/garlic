@@ -8,7 +8,8 @@ This repository demonstrates embedded development using AI agents. The project i
 
 - **Board**: Nordic nRF52-DK (nRF52832)
 - **Framework**: Zephyr RTOS
-- **Current Application**: UART DMA echo + 1Hz status (LED blinks)
+- **Current Application**: UART DMA echo + 1 Hz status (LED heartbeat)
+- **Protocol**: Layered serial command stack (UART DMA → Transport → Commands)
 - **Purpose**: Demonstrate AI agent capability for embedded development
 
 ## 🚀 Quick Start
@@ -54,12 +55,20 @@ garlic/
 
 ## 🛠️ Development Workflow
 
-### Code Formatting
+### Code Formatting and Tidy
 ```bash
-./scripts/check_format.sh   # Check if code is properly formatted
-./scripts/fix_format.sh     # Auto-fix formatting issues
-./scripts/format.sh         # Combined tool with multiple options
+# Formatting (clang-format)
+./scripts/format.sh check   # Check formatting (CI runs this)
+./scripts/format.sh fix     # Auto-fix formatting
+
+# Static analysis (clang-tidy)
+./scripts/format.sh tidy        # Check tidy rules (no fixes)
+./scripts/format.sh tidy-fix    # Apply tidy fixes, then run 'fix'
 ```
+
+Notes:
+- CI fails if formatting or tidy checks are not clean; CI does not auto-apply fixes.
+- Run `tidy-fix` and then `fix` locally before pushing to keep CI green.
 
 ### Building
 ```bash
@@ -74,7 +83,7 @@ garlic/
 ./scripts/flash.sh jlink    # Explicitly use J-Link
 ```
 
-### Monitoring
+### Monitoring (UART)
 ```bash
 ./scripts/monitor.sh        # Auto-detect port at 115200 baud
 ./scripts/monitor.sh 115200 /dev/ttyACM0  # Specify port
@@ -113,15 +122,15 @@ python3 scripts/rtt_capture.py --tool auto --outfile logs/rtt_$(date +%s).log
 ### Common Tasks
 
 #### Modify the Application
-1. Edit `app/src/app/main.c`
-2. Run `./scripts/build.sh`
-3. Run `./scripts/flash.sh`
-4. Verify with `./scripts/monitor.sh`
+1. Runtime/loop: edit `app/src/app/src/app_runtime.c` (early boot lines, LED heartbeat, transport hookup)
+2. Commands: add/modify under `app/src/commands/*` (each module has its own CMakeLists)
+3. Build `./scripts/build.sh`, flash `./scripts/flash.sh`
+4. Verify via UART (`./scripts/monitor.sh`) or RTT (`./scripts/rtt_capture.sh`)
 
 #### Add New Source Files
-1. Add `.c` files to `app/src/`
-2. Update `app/CMakeLists.txt` to include new sources
-3. Rebuild and flash
+- Prefer adding within a module (e.g., `app/src/commands/foo/src/*.c`).
+- Register sources in that module’s `CMakeLists.txt` instead of the app root.
+- Rebuild and flash.
 
 #### Configure Zephyr
 - Edit `app/prj.conf` for configuration options
@@ -140,6 +149,12 @@ The `scripts/source.sh` script sets up:
 cmake -S tests/unit -B tests/unit/build -DCMAKE_BUILD_TYPE=Release
 cmake --build tests/unit/build -j
 ctest --test-dir tests/unit/build --output-on-failure
+```
+
+#### Integration tests (hardware)
+Runs against the nRF52-DK over J-Link and UART. By default uses J-Link RTT capture for early boot reliability.
+```
+./scripts/test_integration.sh --port /dev/ttyUSB0  # override port if needed
 ```
 
 #### Board Not Detected
@@ -199,3 +214,7 @@ This project is designed for AI agent development. When making changes:
 ---
 
 **Note for AI Agents**: This repository is your workspace for embedded development. All scripts are designed to be robust and provide clear feedback. If you encounter issues, check the troubleshooting section or examine script output carefully.
+### Protocol & Commands
+See docs/PROTOCOL.md for the transport framing and command payload formats.
+
+Unit tests cover CRC32, transport framing/fragmentation/reassembly and stats, command registry/dispatch (with mocks), command glue (fragmented), UART DMA RX/TX paths. Integration tests exercise command handlers and transport behavior on real hardware.
