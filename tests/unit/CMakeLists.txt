@@ -21,19 +21,21 @@ set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 
 FetchContent_MakeAvailable(googletest)
 
-# Include directories for our source code
-include_directories(
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../app/src
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../app/include
+add_library(circular_buffer_host STATIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../app/src/utils/circular_buffer/src/circular_buffer.c
 )
 
-# Add test executable (use consolidated circular buffer suite)
+target_include_directories(circular_buffer_host PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../app/src/utils/circular_buffer/inc
+)
+
 add_executable(garlic_tests
     ${CMAKE_CURRENT_SOURCE_DIR}/test_circular_buffer.cpp
 )
 
 # Link Google Test
 target_link_libraries(garlic_tests
+    circular_buffer_host
     GTest::gtest_main
     GTest::gtest
     GTest::gmock

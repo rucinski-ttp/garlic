@@ -32,6 +32,8 @@ case "$1" in
         ;;
 esac
 
+BUILD_DIR=${GARLIC_BUILD_DIR:-build}
+
 # Change to app directory
 cd /projects/garlic/app
 
@@ -44,11 +46,11 @@ fi
 # Build the application
 echo -e "${GREEN}Building application for nRF52-DK...${NC}"
 echo "Board: nrf52dk/nrf52832"
-echo "Build directory: app/build"
+echo "Build directory: app/${BUILD_DIR}"
 echo ""
 
 # Run the build
-if west build -b nrf52dk/nrf52832 $BUILD_ARGS; then
+if west build -d "${BUILD_DIR}" -b nrf52dk/nrf52832 $BUILD_ARGS; then
     echo ""
     echo -e "${GREEN}✓ Build completed successfully!${NC}"
 else
@@ -59,21 +61,21 @@ fi
 # Display build summary
 echo ""
 echo "Output files:"
-if [ -f build/zephyr/zephyr.elf ]; then
-    echo -e "  ${GREEN}✓${NC} ELF: build/zephyr/zephyr.elf ($(du -h build/zephyr/zephyr.elf | cut -f1))"
+if [ -f "${BUILD_DIR}/zephyr/zephyr.elf" ]; then
+    echo -e "  ${GREEN}✓${NC} ELF: ${BUILD_DIR}/zephyr/zephyr.elf ($(du -h "${BUILD_DIR}/zephyr/zephyr.elf" | cut -f1))"
 fi
-if [ -f build/zephyr/zephyr.hex ]; then
-    echo -e "  ${GREEN}✓${NC} HEX: build/zephyr/zephyr.hex ($(du -h build/zephyr/zephyr.hex | cut -f1))"
+if [ -f "${BUILD_DIR}/zephyr/zephyr.hex" ]; then
+    echo -e "  ${GREEN}✓${NC} HEX: ${BUILD_DIR}/zephyr/zephyr.hex ($(du -h "${BUILD_DIR}/zephyr/zephyr.hex" | cut -f1))"
 fi
-if [ -f build/zephyr/zephyr.bin ]; then
-    echo -e "  ${GREEN}✓${NC} BIN: build/zephyr/zephyr.bin ($(du -h build/zephyr/zephyr.bin | cut -f1))"
+if [ -f "${BUILD_DIR}/zephyr/zephyr.bin" ]; then
+    echo -e "  ${GREEN}✓${NC} BIN: ${BUILD_DIR}/zephyr/zephyr.bin ($(du -h "${BUILD_DIR}/zephyr/zephyr.bin" | cut -f1))"
 fi
 
 # Display memory usage
 echo ""
 echo "Memory usage:"
-if [ -f build/zephyr/zephyr.map ]; then
-    ${CROSS_COMPILE}size build/zephyr/zephyr.elf | tail -n +2 | \
+if [ -f "${BUILD_DIR}/zephyr/zephyr.map" ]; then
+    ${CROSS_COMPILE}size "${BUILD_DIR}/zephyr/zephyr.elf" | tail -n +2 | \
     while read text data bss dec hex filename; do
         flash=$((text + data))
         ram=$((data + bss))

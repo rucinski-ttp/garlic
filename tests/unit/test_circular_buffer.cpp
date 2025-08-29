@@ -10,9 +10,9 @@
 #include <thread>
 #include <atomic>
 
-// Include the C header
+// Include the C header only; link implementation via CMake
 extern "C" {
-#include "../../app/src/utils/circular_buffer.c"  // Include implementation directly for testing
+#include "circular_buffer.h"
 }
 
 using ::testing::ElementsAre;

@@ -28,6 +28,7 @@ jobs:
         shell: bash
         run: |
           source scripts/source.sh
+          export GARLIC_BUILD_DIR=build-ci-${{ github.run_id }}
           ./scripts/build.sh clean
 
       - name: Run unit tests
@@ -42,6 +43,6 @@ jobs:
         with:
           name: firmware-artifacts
           path: |
-            app/build/zephyr/zephyr.elf
-            app/build/zephyr/zephyr.hex
-            app/build/zephyr/zephyr.bin
+            app/${{ env.GARLIC_BUILD_DIR || 'build-ci-${{ github.run_id }}' }}/zephyr/zephyr.elf
+            app/${{ env.GARLIC_BUILD_DIR || 'build-ci-${{ github.run_id }}' }}/zephyr/zephyr.hex
+            app/${{ env.GARLIC_BUILD_DIR || 'build-ci-${{ github.run_id }}' }}/zephyr/zephyr.bin
