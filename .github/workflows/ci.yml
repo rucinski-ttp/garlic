@@ -18,6 +18,12 @@ jobs:
           cmake --version || true
           ninja --version || true
 
+      - name: Install Zephyr Python deps
+        shell: bash
+        run: |
+          python3 -m pip install --user --upgrade pip
+          python3 -m pip install --user -r zephyr/scripts/requirements.txt
+
       - name: Check formatting (clang-format)
         shell: bash
         run: |
