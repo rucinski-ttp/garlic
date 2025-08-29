@@ -3,10 +3,10 @@
  * One-byte-free ring buffer, no dynamic allocation.
  */
 
-#include "circular_buffer.h"
+#include "utils/circular_buffer/inc/circular_buffer.h"
 #include <string.h>
 
-static inline size_t _advance(size_t idx, size_t inc, size_t size)
+static inline size_t cb_advance(size_t idx, size_t inc, size_t size)
 {
     return (idx + inc) % size;
 }
@@ -45,7 +45,7 @@ bool circular_buffer_is_full(const circular_buffer_t *cb)
     if (!cb) {
         return true;
     }
-    return _advance(cb->head, 1, cb->size) == cb->tail;
+    return cb_advance(cb->head, 1, cb->size) == cb->tail;
 }
 
 size_t circular_buffer_available(const circular_buffer_t *cb)
@@ -74,7 +74,7 @@ bool circular_buffer_put(circular_buffer_t *cb, uint8_t data)
         return false;
     }
     cb->buffer[cb->head] = data;
-    cb->head = _advance(cb->head, 1, cb->size);
+    cb->head = cb_advance(cb->head, 1, cb->size);
     return true;
 }
 
@@ -87,7 +87,7 @@ size_t circular_buffer_write(circular_buffer_t *cb, const uint8_t *data, size_t 
     size_t to_write = len < free_space ? len : free_space;
     for (size_t i = 0; i < to_write; i++) {
         cb->buffer[cb->head] = data[i];
-        cb->head = _advance(cb->head, 1, cb->size);
+        cb->head = cb_advance(cb->head, 1, cb->size);
     }
     return to_write;
 }
@@ -98,7 +98,7 @@ bool circular_buffer_get(circular_buffer_t *cb, uint8_t *data)
         return false;
     }
     *data = cb->buffer[cb->tail];
-    cb->tail = _advance(cb->tail, 1, cb->size);
+    cb->tail = cb_advance(cb->tail, 1, cb->size);
     return true;
 }
 
@@ -111,7 +111,7 @@ size_t circular_buffer_read(circular_buffer_t *cb, uint8_t *data, size_t len)
     size_t to_read = len < avail ? len : avail;
     for (size_t i = 0; i < to_read; i++) {
         data[i] = cb->buffer[cb->tail];
-        cb->tail = _advance(cb->tail, 1, cb->size);
+        cb->tail = cb_advance(cb->tail, 1, cb->size);
     }
     return to_read;
 }
@@ -126,7 +126,7 @@ size_t circular_buffer_peek(const circular_buffer_t *cb, uint8_t *data, size_t l
     size_t t = cb->tail;
     for (size_t i = 0; i < to_peek; i++) {
         data[i] = cb->buffer[t];
-        t = _advance(t, 1, cb->size);
+        t = cb_advance(t, 1, cb->size);
     }
     return to_peek;
 }
@@ -153,7 +153,7 @@ void circular_buffer_advance_read(circular_buffer_t *cb, size_t len)
     }
     size_t avail = circular_buffer_available(cb);
     size_t adv = len < avail ? len : avail;
-    cb->tail = _advance(cb->tail, adv, cb->size);
+    cb->tail = cb_advance(cb->tail, adv, cb->size);
 }
 
 int circular_buffer_get_write_block(circular_buffer_t *cb, uint8_t **data_ptr, size_t *len)
@@ -188,5 +188,5 @@ void circular_buffer_advance_write(circular_buffer_t *cb, size_t len)
     }
     size_t free = circular_buffer_free_space(cb);
     size_t adv = len < free ? len : free;
-    cb->head = _advance(cb->head, adv, cb->size);
+    cb->head = cb_advance(cb->head, adv, cb->size);
 }

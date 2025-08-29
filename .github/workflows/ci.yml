@@ -18,11 +18,11 @@ jobs:
           cmake --version || true
           ninja --version || true
 
-      - name: Check formatting
+      - name: Check formatting (clang-format)
         shell: bash
         run: |
-          chmod +x scripts/*.sh
-          ./scripts/check_format.sh
+          source scripts/source.sh
+          ./scripts/format.sh check
 
       - name: Build Zephyr app (nRF52DK)
         shell: bash
@@ -30,6 +30,15 @@ jobs:
           source scripts/source.sh
           export GARLIC_BUILD_DIR=build-ci-${{ github.run_id }}
           ./scripts/build.sh clean
+
+      - name: Clang-Tidy (unit compile DB)
+        shell: bash
+        run: |
+          if command -v clang-tidy >/dev/null 2>&1; then
+            ./scripts/format.sh tidy
+          else
+            echo "clang-tidy not found on runner; skipping."
+          fi
 
       - name: Run unit tests
         shell: bash

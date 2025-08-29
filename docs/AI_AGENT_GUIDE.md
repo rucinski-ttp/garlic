@@ -24,11 +24,14 @@ This document provides critical information for AI agents working on the Garlic 
 
 ```
 /projects/garlic/
-├── app/src/main.c          # Main application code
-├── app/prj.conf            # Zephyr configuration
-├── app/CMakeLists.txt      # Build configuration
-├── scripts/                # All automation scripts
-└── zephyr/                 # Zephyr RTOS source (DO NOT MODIFY)
+├── app/prj.conf                      # Zephyr configuration
+├── app/CMakeLists.txt                # App-level CMake
+└── app/src/
+    ├── app/src/app_runtime.c         # Runtime thread (boot prints, LED, transport hookup)
+    ├── commands/                     # Command handlers (each with its own CMakeLists.txt)
+    ├── proto/                        # Transport + CRC32
+    ├── stack/                        # Transport↔command glue
+    └── drivers/uart_dma/             # UART DMA driver + headers
 ```
 
 ## Environment Variables
@@ -110,10 +113,12 @@ k_usleep(100);   // Sleep 100 microseconds
 
 ### Common Options
 ```conf
-# Console
+# Console / logging (project defaults)
 CONFIG_SERIAL=y
 CONFIG_CONSOLE=y
-CONFIG_UART_CONSOLE=y
+CONFIG_UART_CONSOLE=n           # UART kept for data; debug logs via RTT
+CONFIG_LOG_BACKEND_RTT=y
+CONFIG_PRINTK=y                 # Enable printk for early boot lines
 
 # GPIO
 CONFIG_GPIO=y
@@ -130,20 +135,9 @@ CONFIG_SHELL_BACKEND_SERIAL=y
 ## Build System
 
 ### Adding Source Files
-Edit `app/CMakeLists.txt`:
-```cmake
-target_sources(app PRIVATE
-    src/main.c
-    src/new_file.c      # Add new files here
-)
-```
+Prefer editing the module-local `CMakeLists.txt` (e.g., `app/src/commands/echo/CMakeLists.txt`) to register new sources. The app build gathers module targets.
 
-### Adding Include Directories
-```cmake
-target_include_directories(app PRIVATE
-    include/            # Add include paths
-)
-```
+If you need to add a new module, mirror the existing directory structure and minimal CMakeLists from a peer module.
 
 ## Debugging Issues
 

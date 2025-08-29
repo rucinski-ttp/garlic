@@ -1,3 +1,5 @@
 add_subdirectory(utils)
 add_subdirectory(drivers)
-
+add_subdirectory(proto)
+add_subdirectory(commands)
+add_subdirectory(stack)

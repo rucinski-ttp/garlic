@@ -14,14 +14,15 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Source environment
-SCRIPT_DIR="$(dirname "$0")"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+ROOT_DIR="${SCRIPT_DIR}/.."
 source "${SCRIPT_DIR}/source.sh"
 
 # Default flasher
 FLASHER=${1:-jlink}
 
 # Change to app directory
-cd /projects/garlic/app
+cd "${ROOT_DIR}/app"
 
 # Resolve build directory
 BUILD_DIR=${GARLIC_BUILD_DIR:-build}

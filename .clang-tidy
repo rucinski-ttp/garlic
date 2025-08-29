@@ -1,0 +1,27 @@
+Checks: >
+  -*,
+  bugprone-branch-clone,
+  readability-braces-around-statements,
+  readability-avoid-return-with-conditionals,
+  readability-identifier-naming,
+  modernize-redundant-typedef,
+  cert-*,
+  clang-analyzer-*,
+  -clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling
+WarningsAsErrors: '*'
+HeaderFilterRegex: '^(app/src|app/include|tests/unit)'
+CheckOptions:
+  - { key: readability-identifier-naming.TypeAliasCase,           value: lower_case }
+  - { key: readability-identifier-naming.TypeAliasSuffix,         value: '_t' }
+  - { key: readability-identifier-naming.StructCase,              value: lower_case }
+  - { key: readability-identifier-naming.UnionSuffix,             value: '_u' }
+  - { key: readability-identifier-naming.EnumCase,                value: lower_case }
+  - { key: readability-identifier-naming.EnumConstantCase,        value: UPPER_CASE }
+  - { key: readability-identifier-naming.FunctionCase,            value: lower_case }
+  - { key: readability-identifier-naming.GlobalFunctionCase,      value: lower_case }
+  - { key: readability-identifier-naming.FunctionIgnoredRegexp,    value: '^_.*$' }
+  - { key: readability-identifier-naming.GlobalFunctionIgnoredRegexp, value: '^_.*$' }
+  - { key: readability-identifier-naming.VariableCase,            value: lower_case }
+  - { key: readability-identifier-naming.ParameterCase,           value: lower_case }
+  - { key: readability-identifier-naming.MemberCase,              value: lower_case }
+  - { key: readability-identifier-naming.MacroDefinitionCase,     value: UPPER_CASE }
