@@ -25,9 +25,9 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 source "${SCRIPT_DIR}/source.sh" >/dev/null 2>&1 || true
 
 cd "${SCRIPT_DIR}/.."
-echo "Running pytest integration tests..."
+echo "Running pytest integration tests (J-Link RTT)..."
 if [[ -n "${PORT}" ]]; then
-  pytest -q tests/integration --run-hardware --garlic-port "${PORT}"
+  pytest -q tests/integration --run-hardware --garlic-port "${PORT}" --garlic-rtt-tool jlink -s
 else
-  pytest -q tests/integration --run-hardware
+  pytest -q tests/integration --run-hardware --garlic-rtt-tool jlink -s
 fi

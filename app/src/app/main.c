@@ -3,8 +3,10 @@
 #include <zephyr/drivers/uart.h>
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
+#include <zephyr/sys/printk.h>
 #include <stdio.h>
 #include <string.h>
+#include <SEGGER_RTT.h>
 #include <uart_dma.h>
 #ifdef __GNUC__
 #pragma GCC diagnostic push
@@ -12,6 +14,10 @@
 #endif
 
 LOG_MODULE_REGISTER(main, LOG_LEVEL_INF);
+
+#ifndef GARLIC_GIT_HASH
+#define GARLIC_GIT_HASH "unknown"
+#endif
 
 /* LED configuration */
 #define LED0_NODE DT_ALIAS(led0)
@@ -85,11 +91,24 @@ static void send_status_message(void)
                        uart_dma_tx_free_space(), uart_dma_rx_available());
 
     uart_dma_send((uint8_t *)status_buf, len);
+
+    /* Also log a concise RTT status once per second as a backup */
+    LOG_INF("RTT Status: LED=%s TX=%u RX=%u TX_free=%u RX_avail=%u", led_state ? "ON" : "OFF",
+            stats.tx_bytes, stats.rx_bytes, uart_dma_tx_free_space(), uart_dma_rx_available());
 }
 
 void main(void)
 {
     int ret;
+
+    /* Emit a raw console message over RTT very early to prove RTT works on reset */
+    /* Configure RTT channel 0 to block if full to avoid dropping boot lines */
+    SEGGER_RTT_SetFlagsUpBuffer(0, SEGGER_RTT_MODE_BLOCK_IF_FIFO_FULL);
+    /* Emit raw RTT lines very early to prove RTT works on reset */
+    SEGGER_RTT_WriteString(0, "RTT Boot: Garlic UART DMA starting\n");
+    SEGGER_RTT_WriteString(0, "RTT Git: " GARLIC_GIT_HASH "\n");
+    printk("RTT Boot: Garlic UART DMA starting\r\n");
+    printk("RTT Git: %s\r\n", GARLIC_GIT_HASH);
 
     LOG_INF("Garlic UART DMA Application Starting");
 
