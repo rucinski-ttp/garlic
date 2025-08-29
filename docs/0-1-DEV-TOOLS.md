@@ -24,20 +24,14 @@
 
 ## Flashing Tools
 
-### pyOCD (Recommended)
-- Python-based debugger
-- Supports J-Link on nRF52-DK
-- Usage: `pyocd flash -t nrf52832 <hex_file>`
-
-### OpenOCD
-- Alternative debugger
-- May have USB timeout issues
-- Usage: See `scripts/flash.sh`
+### SEGGER J-Link (Recommended)
+- On-board debugger on nRF52-DK
+- Usage: `./scripts/flash.sh` (uses JLinkExe)
+  - Under the hood: halts, loads HEX, verifies, resets, runs
 
 ### nrfjprog
-- Nordic's official tool
-- Not currently installed
-- Would require J-Link drivers
+- Nordic's official tool (not required in this project)
+
 
 ## Known Issues
 

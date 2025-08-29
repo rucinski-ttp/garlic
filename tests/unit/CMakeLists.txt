@@ -31,6 +31,7 @@ target_include_directories(circular_buffer_host PUBLIC
 
 add_executable(garlic_tests
     ${CMAKE_CURRENT_SOURCE_DIR}/test_circular_buffer.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_build_info.cpp
 )
 
 # Link Google Test
@@ -40,6 +41,19 @@ target_link_libraries(garlic_tests
     GTest::gtest
     GTest::gmock
 )
+
+# Provide GARLIC_GIT_HASH to unit tests as in app build
+execute_process(
+  COMMAND git rev-parse --short=12 HEAD
+  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+  OUTPUT_VARIABLE UNIT_GIT_HASH
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+  ERROR_QUIET
+)
+if (NOT UNIT_GIT_HASH)
+  set(UNIT_GIT_HASH "unknown")
+endif()
+target_compile_definitions(garlic_tests PRIVATE GARLIC_GIT_HASH="${UNIT_GIT_HASH}")
 
 # Add test discovery
 include(GoogleTest)

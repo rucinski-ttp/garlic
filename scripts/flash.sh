@@ -1,10 +1,10 @@
 #!/bin/bash
 
-# Flash script for nRF52-DK board
-# Usage: ./scripts/flash.sh [openocd|pyocd|west|jlink]
-# Default: openocd (most reliable)
+# Flash script for nRF52-DK board (J-Link only)
+# Usage: ./scripts/flash.sh [jlink]
+# Default: jlink
 
-set -e
+set -euo pipefail
 
 # Colors for output
 RED='\033[0;31m'
@@ -17,8 +17,8 @@ NC='\033[0m' # No Color
 SCRIPT_DIR="$(dirname "$0")"
 source "${SCRIPT_DIR}/source.sh"
 
-# Default flasher (OpenOCD has been most reliable)
-FLASHER=${1:-openocd}
+# Default flasher
+FLASHER=${1:-jlink}
 
 # Change to app directory
 cd /projects/garlic/app
@@ -59,64 +59,7 @@ pkill -f openocd 2>/dev/null || true
 pkill -f JLink 2>/dev/null || true
 sleep 1
 
-# Flash based on selected method
 case $FLASHER in
-    openocd)
-        echo -e "${YELLOW}Using OpenOCD (recommended)...${NC}"
-        if ! command -v openocd &> /dev/null; then
-            echo -e "${RED}Error: OpenOCD not found!${NC}"
-            echo "Please install: sudo apt-get install openocd"
-            exit 1
-        fi
-        
-        if openocd -f interface/jlink.cfg \
-                   -c "transport select swd" \
-                   -f target/nrf52.cfg \
-                   -c "program ${BUILD_DIR}/zephyr/zephyr.hex verify reset exit" 2>&1 | tee "$LOGFILE"; then
-            echo -e "${GREEN}✓ Flash successful with OpenOCD!${NC}"
-        else
-            echo -e "${RED}✗ OpenOCD flash failed!${NC}"
-            echo "Check $LOGFILE for details"
-            echo -e "${YELLOW}Falling back to JLink...${NC}"
-            FLASHER=jlink
-            # Fall through to jlink case
-        fi
-        ;;
-    
-    pyocd)
-        echo -e "${YELLOW}Using pyOCD...${NC}"
-        if ! command -v pyocd &> /dev/null; then
-            echo -e "${RED}Error: pyOCD not found!${NC}"
-            echo "Please install: pip install pyocd"
-            exit 1
-        fi
-        
-        # Use timeout to prevent hanging
-        if timeout 30 pyocd flash -t nrf52832 build/zephyr/zephyr.hex; then
-            echo -e "${GREEN}✓ Flash successful with pyOCD!${NC}"
-        else
-            echo -e "${RED}✗ pyOCD flash failed!${NC}"
-            echo "Try: ./scripts/flash.sh openocd"
-            exit 1
-        fi
-        ;;
-    
-    west)
-        echo -e "${YELLOW}Using West flash...${NC}"
-        if ! command -v west &> /dev/null; then
-            echo -e "${RED}Error: west not found!${NC}"
-            exit 1
-        fi
-        
-        if west flash --skip-rebuild; then
-            echo -e "${GREEN}✓ Flash successful with West!${NC}"
-        else
-            echo -e "${RED}✗ West flash failed!${NC}"
-            echo "Note: West may require nrfjprog. Try: ./scripts/flash.sh openocd"
-            exit 1
-        fi
-        ;;
-    
     jlink)
         echo -e "${YELLOW}Using JLink...${NC}"
         if ! command -v JLinkExe &> /dev/null; then
@@ -135,10 +78,10 @@ h
 loadfile ${BUILD_DIR}/zephyr/zephyr.hex
 r
 g
-exit
+q
 EOF
         
-        if JLinkExe -CommandFile build/flash.jlink; then
+        if timeout 30 JLinkExe -CommandFile build/flash.jlink; then
             echo -e "${GREEN}✓ Flash successful with JLink!${NC}"
         else
             echo -e "${RED}✗ JLink flash failed!${NC}"
@@ -148,10 +91,7 @@ EOF
     
     *)
         echo -e "${RED}Unknown flasher: $FLASHER${NC}"
-        echo "Usage: $0 [openocd|pyocd|west|jlink]"
-        echo "  openocd - OpenOCD with J-Link (recommended)"
-        echo "  pyocd   - pyOCD universal debugger"
-        echo "  west    - Zephyr west tool (requires nrfjprog)"
+        echo "Usage: $0 [jlink]"
         echo "  jlink   - SEGGER J-Link tools"
         exit 1
         ;;

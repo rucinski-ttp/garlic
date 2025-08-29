@@ -38,6 +38,8 @@ jobs:
           cmake --build tests/unit/build -j
           ctest --test-dir tests/unit/build --output-on-failure
 
+      # Removed RTT capture help step to streamline CI
+
       - name: Archive firmware artifacts
         uses: actions/upload-artifact@v4
         with:

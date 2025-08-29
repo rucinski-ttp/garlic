@@ -49,19 +49,13 @@ check_tool cmake || MISSING_TOOLS=1
 check_tool ninja || MISSING_TOOLS=1
 check_tool ${CROSS_COMPILE}gcc || MISSING_TOOLS=1
 
-# Flash tools (at least one required)
-FLASH_TOOL_FOUND=0
 echo ""
-echo -e "${BLUE}Checking flash tools...${NC}"
-check_tool openocd && FLASH_TOOL_FOUND=1
-check_tool pyocd && FLASH_TOOL_FOUND=1
-check_tool JLinkExe && FLASH_TOOL_FOUND=1
-
-if [ $FLASH_TOOL_FOUND -eq 0 ]; then
-    echo -e "${YELLOW}⚠ No flash tools found. Install at least one:${NC}"
-    echo "  - OpenOCD: sudo apt-get install openocd"
-    echo "  - pyOCD: pip install pyocd"
-    echo "  - JLink: Download from SEGGER website"
+echo -e "${BLUE}Checking J-Link tools...${NC}"
+check_tool JLinkExe || true
+check_tool JLinkGDBServer || true
+check_tool JLinkRTTLogger || true
+if ! command -v JLinkExe >/dev/null 2>&1; then
+    echo -e "${YELLOW}⚠ JLinkExe not found. Please install SEGGER J-Link tools.${NC}"
 fi
 
 # Check for serial tools
@@ -129,6 +123,7 @@ echo "  1. Connect your nRF52-DK board via USB"
 echo "  2. Build:  ./scripts/build.sh"
 echo "  3. Flash:  ./scripts/flash.sh"
 echo "  4. Monitor: ./scripts/monitor.sh"
+echo "  5. RTT:    ./scripts/rtt_capture.sh --tool jlink"
 echo ""
 echo "For AI agents: See docs/AI_AGENT_GUIDE.md for detailed information"
 echo ""

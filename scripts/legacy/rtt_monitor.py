@@ -162,3 +162,4 @@ if __name__ == "__main__":
                 print("\nNo RTT monitoring method succeeded.")
                 print("Please ensure J-Link tools or OpenOCD are properly installed.")
                 sys.exit(1)
+

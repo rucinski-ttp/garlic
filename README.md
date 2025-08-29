@@ -68,12 +68,10 @@ garlic/
 ./scripts/build.sh menuconfig # Configure Zephyr options
 ```
 
-### Flashing
+### Flashing (J-Link)
 ```bash
-./scripts/flash.sh          # Default (OpenOCD - recommended)
-./scripts/flash.sh openocd  # Explicitly use OpenOCD
-./scripts/flash.sh pyocd    # Use pyOCD
-./scripts/flash.sh west     # Use West (requires nrfjprog)
+./scripts/flash.sh          # Uses SEGGER J-Link
+./scripts/flash.sh jlink    # Explicitly use J-Link
 ```
 
 ### Monitoring
@@ -88,12 +86,28 @@ garlic/
 python3 scripts/uart_capture.py --port /dev/ttyUSB0 --baud 115200 --outfile logs/uart_$(date +%s).log
 ```
 
+### Capture RTT logs (J-Link)
+```bash
+# Auto-select J-Link backend (Logger → RTT Client)
+./scripts/rtt_capture.sh
+
+# Explicit control
+./scripts/rtt_capture.sh --tool jlink-logger                 # Use JLinkRTTLogger
+./scripts/rtt_capture.sh --tool jlink --channel 0            # Use JLinkGDBServer + JLinkRTTClient
+
+# Custom output file
+./scripts/rtt_capture.sh --outfile logs/rtt_manual.log
+
+# Direct Python
+python3 scripts/rtt_capture.py --tool auto --outfile logs/rtt_$(date +%s).log
+```
+
 ## 🤖 AI Agent Instructions
 
 ### Key Information
 1. **Board Connection**: nRF52-DK connects via USB, appears as SEGGER J-Link
 2. **Serial Port**: Usually `/dev/ttyACM0` on Linux, auto-detected by monitor script
-3. **Flash Method**: OpenOCD is most reliable, followed by pyOCD
+3. **Flash Method**: J-Link
 4. **Build System**: Uses West and CMake, all handled by scripts
 
 ### Common Tasks
@@ -134,8 +148,8 @@ ctest --test-dir tests/unit/build --output-on-failure
 - May need to add user to `dialout` group
 
 #### Flash Failures
-- Try different flash method: `./scripts/flash.sh openocd`
-- Kill any hanging debug sessions: `pkill openocd`
+- Ensure J-Link tools are installed (JLinkExe, JLinkGDBServer)
+- Kill any hanging debug sessions: `pkill JLink`/close Ozone/VSCode
 - Check board is powered and not in debug mode
 
 #### Build Issues

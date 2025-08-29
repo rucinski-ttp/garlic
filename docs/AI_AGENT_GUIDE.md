@@ -18,7 +18,7 @@ This document provides critical information for AI agents working on the Garlic 
 - **RTOS**: Zephyr 3.7.0
 - **Build System**: West + CMake + Ninja
 - **Toolchain**: Zephyr SDK (GCC ARM Embedded)
-- **Flash Tools**: OpenOCD (primary), pyOCD, West, JLink
+- **Flash Tools**: SEGGER J-Link
 
 ## Critical File Locations
 
@@ -156,9 +156,10 @@ target_include_directories(app PRIVATE
    - Check: `lsusb | grep SEGGER`
    - Solution: Reconnect USB, check cable
 
-3. **Flash fails with OpenOCD**
-   - Kill processes: `pkill openocd`
-   - Try: `./scripts/flash.sh pyocd`
+3. **Flash fails**
+   - Ensure J-Link tools are installed (JLinkExe, JLinkGDBServer)
+   - Kill hanging sessions: close Ozone/VSCode; `pkill JLink`
+   - Reconnect the board USB and retry
 
 4. **Build errors**
    - Clean: `./scripts/build.sh clean`

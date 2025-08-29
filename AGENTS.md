@@ -38,7 +38,7 @@ Use the provided scripts; they source the expected Zephyr SDK path via `scripts/
 
 - Setup once: `./scripts/setup.sh` (initializes West if needed)
 - Build: `./scripts/build.sh` (or `./scripts/build.sh clean`)
-- Flash: `./scripts/flash.sh` (auto-falls back to JLink if OpenOCD fails)
+- Flash: `./scripts/flash.sh` (J-Link)
 - Monitor: `./scripts/monitor.sh 115200 /dev/ttyUSB0`
 - Capture logs: `python3 scripts/uart_capture.py --port /dev/ttyUSB0 --baud 115200 --outfile logs/uart_$(date +%s).log`
 
@@ -92,9 +92,20 @@ This runs with `--run-hardware` and exercises:
 - Serial open/settle: The host can toggle DTR; tests include a short settle delay after open.
 - Runtime `uart_configure()` may be unsupported on some stacks. The driver proceeds using DT defaults when configure returns an error.
 
-## Future (RTT)
+## RTT Capture
 
-- RTT is enabled and used for logs. A robust RTT capture script can be added to complement `uart_capture.py`. Keep UART for data path; use RTT for debug logs.
+- Firmware enables RTT logging (`CONFIG_LOG_BACKEND_RTT=y`). Keep UART for data; use RTT for debug logs.
+- Preferred capture command (J-Link only):
+  - `./scripts/rtt_capture.sh` → saves to `logs/rtt_<epoch>.log`
+- Explicit backends:
+  - `./scripts/rtt_capture.sh --tool jlink-logger` (requires `JLinkRTTLogger`)
+  - `./scripts/rtt_capture.sh --tool jlink` (starts `JLinkGDBServer` + `JLinkRTTClient`)
+- Direct Python usage:
+  - `python3 scripts/rtt_capture.py --tool auto --outfile logs/rtt.log`
+- Environment overrides:
+  - `GARLIC_RTT_TOOL`, `GARLIC_RTT_DEVICE`, `GARLIC_RTT_SPEED`, `GARLIC_RTT_CHANNEL`
+
+Note: A previous experimental script was moved to `scripts/legacy/rtt_monitor.py`.
 
 ## Contributing Tips for Agents
 
@@ -102,4 +113,3 @@ This runs with `--run-hardware` and exercises:
 - Keep changes focused; update docs and scripts as needed.
 - Add tests for new functionality; avoid regressions.
 - For bring-up or experiments, place one-offs under `app/src/app/examples/` and keep the main build clean.
-
