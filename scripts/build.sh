@@ -35,6 +35,16 @@ esac
 
 BUILD_DIR=${GARLIC_BUILD_DIR:-build}
 
+# Ensure west workspace is initialized (run from repo root)
+if [ ! -d "${ROOT_DIR}/.west" ]; then
+    echo -e "${YELLOW}Initializing West workspace (missing .west)...${NC}"
+    (
+      cd "${ROOT_DIR}" && \
+      west init -l app/ && \
+      west update --narrow -o=--depth=1
+    )
+fi
+
 # Change to app directory
 cd "${ROOT_DIR}/app"
 
