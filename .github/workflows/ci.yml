@@ -18,11 +18,13 @@ jobs:
           cmake --version || true
           ninja --version || true
 
-      - name: Install Zephyr Python deps
+      - name: Install Zephyr Python deps (venv)
         shell: bash
         run: |
-          python3 -m pip install --user --upgrade pip
-          python3 -m pip install --user -r zephyr/scripts/requirements.txt
+          python3 -m venv venv
+          . venv/bin/activate
+          python -m pip install --upgrade pip
+          pip install -r zephyr/scripts/requirements.txt
 
       - name: Check formatting (clang-format)
         shell: bash
