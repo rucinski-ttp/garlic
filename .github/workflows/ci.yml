@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build-and-test:
+    runs-on: [self-hosted, Linux, X64]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Show runner info
+        run: |
+          uname -a
+          python3 --version || true
+          cmake --version || true
+          ninja --version || true
+
+      - name: Check formatting
+        shell: bash
+        run: |
+          chmod +x scripts/*.sh
+          ./scripts/check_format.sh
+
+      - name: Build Zephyr app (nRF52DK)
+        shell: bash
+        run: |
+          source scripts/source.sh
+          ./scripts/build.sh clean
+
+      - name: Run unit tests
+        shell: bash
+        run: |
+          cmake -S tests/unit -B tests/unit/build -DCMAKE_BUILD_TYPE=Release
+          cmake --build tests/unit/build -j
+          ctest --test-dir tests/unit/build --output-on-failure
+
+      - name: Archive firmware artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: firmware-artifacts
+          path: |
+            app/build/zephyr/zephyr.elf
+            app/build/zephyr/zephyr.hex
+            app/build/zephyr/zephyr.bin

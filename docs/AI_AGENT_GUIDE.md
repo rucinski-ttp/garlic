@@ -45,6 +45,10 @@ Set by `scripts/source.sh`:
 # Always source environment first (scripts do this automatically)
 source scripts/source.sh
 
+# Code quality
+./scripts/check_format.sh   # Check code formatting (use in CI)
+./scripts/fix_format.sh     # Auto-fix formatting issues
+
 # Build cycle
 ./scripts/build.sh          # Build application
 ./scripts/flash.sh          # Flash to board
@@ -180,10 +184,11 @@ target_include_directories(app PRIVATE
 ## Important Conventions
 
 1. **Always use scripts** - Don't run west/cmake directly
-2. **Check hardware** - Ensure board is connected before flashing
-3. **Clean builds** - When in doubt, do a clean build
-4. **Document changes** - Update README for new features
-5. **Test before commit** - Always test on hardware
+2. **Check formatting** - Run `./scripts/check_format.sh` before commit
+3. **Check hardware** - Ensure board is connected before flashing
+4. **Clean builds** - When in doubt, do a clean build
+5. **Document changes** - Update README for new features
+6. **Test before commit** - Always test on hardware
 
 ## Flash Memory Map
 

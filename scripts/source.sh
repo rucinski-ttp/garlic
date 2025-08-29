@@ -6,10 +6,10 @@
 echo "Setting up Zephyr environment..."
 
 # Activate Python virtual environment
-source ~/zephyr-venv/bin/activate
+source /projects/garlic/venv/bin/activate
 
 # Set Zephyr SDK path
-export ZEPHYR_SDK_INSTALL_DIR=~/tools/zephyr-global/zephyr-sdk-0.16.8
+export ZEPHYR_SDK_INSTALL_DIR=/home/aaronrucinski/tools/zephyr-global/zephyr-sdk-0.16.8
 
 # Set Zephyr base (updated by west)
 export ZEPHYR_BASE=/projects/garlic/zephyr
