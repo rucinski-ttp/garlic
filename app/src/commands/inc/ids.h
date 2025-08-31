@@ -7,4 +7,6 @@ enum {
     CMD_ID_FLASH_READ = 0x0003,
     CMD_ID_REBOOT = 0x0004,
     CMD_ID_ECHO = 0x0005,
+    CMD_ID_I2C_TRANSFER = 0x0100,
+    CMD_ID_TMP119 = 0x0119,
 };

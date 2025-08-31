@@ -63,3 +63,98 @@ class CommandClient:
         # Request reboot; device should ack and reboot shortly after.
         self._req(0x0004, b'', timeout)
         # After this call, the device may reset; caller can verify via RTT.
+
+    # --- Extended helpers for I2C and TMP119 bring-up ---
+    def i2c_write(self, addr7: int, data: bytes, timeout: float = 1.0) -> None:
+        if not (0 <= addr7 < 128):
+            raise ValueError('addr7 out of range')
+        payload = struct.pack('<BBHH', 0, addr7 & 0x7F, len(data), 0) + data
+        _, status, _ = self._req(0x0100, payload, timeout)
+        if status != 0:
+            raise RuntimeError(f'I2C write failed: status={status}')
+
+    def i2c_read(self, addr7: int, rlen: int, timeout: float = 1.0) -> bytes:
+        if not (0 <= addr7 < 128) or rlen <= 0:
+            raise ValueError('args out of range')
+        payload = struct.pack('<BBHH', 1, addr7 & 0x7F, 0, rlen)
+        _, status, data = self._req(0x0100, payload, timeout)
+        if status != 0 or len(data) != rlen:
+            raise RuntimeError(f'I2C read failed: status={status}, len={len(data)}')
+        return data
+
+    def i2c_write_read(self, addr7: int, wdata: bytes, rlen: int, timeout: float = 1.0) -> bytes:
+        if not (0 <= addr7 < 128) or rlen <= 0:
+            raise ValueError('args out of range')
+        payload = struct.pack('<BBHH', 2, addr7 & 0x7F, len(wdata), rlen) + wdata
+        _, status, data = self._req(0x0100, payload, timeout)
+        if status != 0 or len(data) != rlen:
+            raise RuntimeError(f'I2C write_read failed: status={status}, len={len(data)}')
+        return data
+
+    def i2c_scan(self, timeout: float = 1.0) -> list[int]:
+        payload = struct.pack('<BB', 0x10, 0)  # op=0x10, addr ignored
+        _, status, data = self._req(0x0100, payload, timeout)
+        if status != 0 or len(data) == 0:
+            raise RuntimeError(f'I2C scan failed: status={status}, len={len(data)}')
+        count = data[0]
+        addrs = list(data[1:1+count])
+        return addrs
+
+    def tmp119_read_id(self, addr7: int = 0x48, timeout: float = 1.0) -> int:
+        _, status, data = self._req(0x0119, struct.pack('<BB', 0x00, addr7 & 0x7F), timeout)
+        if status != 0 or len(data) != 2:
+            raise RuntimeError(f'TMP119 READ_ID failed: status={status}')
+        return struct.unpack('<H', data)[0]
+
+    def tmp119_read_temp_mc(self, addr7: int = 0x48, timeout: float = 1.0) -> int:
+        _, status, data = self._req(0x0119, struct.pack('<BB', 0x01, addr7 & 0x7F), timeout)
+        if status != 0 or len(data) != 4:
+            raise RuntimeError(f'TMP119 READ_TEMP_mC failed: status={status}')
+        return struct.unpack('<i', data)[0]
+
+    def tmp119_read_temp_raw(self, addr7: int = 0x48, timeout: float = 1.0) -> int:
+        _, status, data = self._req(0x0119, struct.pack('<BB', 0x02, addr7 & 0x7F), timeout)
+        if status != 0 or len(data) != 2:
+            raise RuntimeError(f'TMP119 READ_TEMP_RAW failed: status={status}')
+        return struct.unpack('<H', data)[0]
+
+    def tmp119_read_config(self, addr7: int = 0x48, timeout: float = 1.0) -> int:
+        _, status, data = self._req(0x0119, struct.pack('<BB', 0x03, addr7 & 0x7F), timeout)
+        if status != 0 or len(data) != 2:
+            raise RuntimeError(f'TMP119 READ_CONFIG failed: status={status}')
+        return struct.unpack('<H', data)[0]
+
+    def tmp119_write_config(self, cfg: int, addr7: int = 0x48, timeout: float = 1.0) -> None:
+        payload = struct.pack('<BBH', 0x04, addr7 & 0x7F, cfg & 0xFFFF)
+        _, status, _ = self._req(0x0119, payload, timeout)
+        if status != 0:
+            raise RuntimeError(f'TMP119 WRITE_CONFIG failed: status={status}')
+
+    def tmp119_unlock_eeprom(self, addr7: int = 0x48, timeout: float = 1.0) -> None:
+        _, status, _ = self._req(0x0119, struct.pack('<BB', 0x09, addr7 & 0x7F), timeout)
+        if status != 0:
+            raise RuntimeError(f'TMP119 UNLOCK_EEPROM failed: status={status}')
+
+    def tmp119_read_eeprom(self, idx: int, addr7: int = 0x48, timeout: float = 1.0) -> int:
+        _, status, data = self._req(0x0119, struct.pack('<BBB', 0x0A, addr7 & 0x7F, idx & 0xFF), timeout)
+        if status != 0 or len(data) != 2:
+            raise RuntimeError(f'TMP119 READ_EEPROM failed: status={status}')
+        return struct.unpack('<H', data)[0]
+
+    def tmp119_write_eeprom(self, idx: int, val: int, addr7: int = 0x48, timeout: float = 1.0) -> None:
+        payload = struct.pack('<BBBH', 0x0B, addr7 & 0x7F, idx & 0xFF, val & 0xFFFF)
+        _, status, _ = self._req(0x0119, payload, timeout)
+        if status != 0:
+            raise RuntimeError(f'TMP119 WRITE_EEPROM failed: status={status}')
+
+    def tmp119_read_offset(self, addr7: int = 0x48, timeout: float = 1.0) -> int:
+        _, status, data = self._req(0x0119, struct.pack('<BB', 0x0C, addr7 & 0x7F), timeout)
+        if status != 0 or len(data) != 2:
+            raise RuntimeError(f'TMP119 READ_OFFSET failed: status={status}')
+        return struct.unpack('<H', data)[0]
+
+    def tmp119_write_offset(self, val: int, addr7: int = 0x48, timeout: float = 1.0) -> None:
+        payload = struct.pack('<BBH', 0x0D, addr7 & 0x7F, val & 0xFFFF)
+        _, status, _ = self._req(0x0119, payload, timeout)
+        if status != 0:
+            raise RuntimeError(f'TMP119 WRITE_OFFSET failed: status={status}')

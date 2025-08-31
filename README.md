@@ -55,12 +55,20 @@ garlic/
 
 ## 🛠️ Development Workflow
 
-### Code Formatting
+### Code Formatting and Tidy
 ```bash
-./scripts/check_format.sh   # Check if code is properly formatted
-./scripts/fix_format.sh     # Auto-fix formatting issues
-./scripts/format.sh         # Combined tool with multiple options
+# Formatting (clang-format)
+./scripts/format.sh check   # Check formatting (CI runs this)
+./scripts/format.sh fix     # Auto-fix formatting
+
+# Static analysis (clang-tidy)
+./scripts/format.sh tidy        # Check tidy rules (no fixes)
+./scripts/format.sh tidy-fix    # Apply tidy fixes, then run 'fix'
 ```
+
+Notes:
+- CI fails if formatting or tidy checks are not clean; CI does not auto-apply fixes.
+- Run `tidy-fix` and then `fix` locally before pushing to keep CI green.
 
 ### Building
 ```bash

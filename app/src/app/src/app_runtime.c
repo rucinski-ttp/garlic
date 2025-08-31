@@ -7,6 +7,7 @@
 #include <string.h>
 #include <SEGGER_RTT.h>
 
+#include "drivers/tmp119/inc/tmp119.h"
 #include "drivers/uart_dma/inc/uart_dma.h"
 #include "proto/inc/transport.h"
 #include "stack/cmd_transport/inc/cmd_transport.h"
@@ -50,6 +51,16 @@ void app_runtime_init(void)
     cmd_transport_init(&g_transport);
     SEGGER_RTT_WriteString(0, "RTT: transport ready\n");
     printk("Transport ready\r\n");
+
+    /* Initialize TMP119(s) at boot by scanning known addresses and verifying
+     * Device ID (Sec 8.5.11, p.33). Apply default config (Sec 8.5.3).
+     */
+    int n = tmp119_boot_init();
+    if (n > 0) {
+        LOG_INF("TMP119 devices initialized: %d", n);
+    } else {
+        LOG_WRN("No TMP119 device initialized at boot");
+    }
 }
 
 void app_runtime_tick(void)

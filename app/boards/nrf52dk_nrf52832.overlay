@@ -34,3 +34,36 @@
     /* Enable hardware flow control if needed */
     /* hw-flow-control; */
 };
+
+/* Enable I2C0 on P0.27 (SCL) and P0.26 (SDA) at 400 kHz */
+&pinctrl {
+    i2c0_default: i2c0_default {
+        group1 {
+            psels = <NRF_PSEL(TWIM_SCL, 0, 27)>,
+                    <NRF_PSEL(TWIM_SDA, 0, 26)>;
+            /* Enable weak internal pull-ups as a fallback when no external resistors are present.
+             * Note: For robust I2C, external 2.2k–10k pull-ups are recommended (TMP119 datasheet).
+             */
+            bias-pull-up;
+        };
+    };
+
+    i2c0_sleep: i2c0_sleep {
+        group1 {
+            psels = <NRF_PSEL(TWIM_SCL, 0, 27)>,
+                    <NRF_PSEL(TWIM_SDA, 0, 26)>;
+            low-power-enable;
+            /* Keep pull-ups enabled in sleep to avoid floating lines if needed */
+            bias-pull-up;
+        };
+    };
+};
+
+&i2c0 {
+    compatible = "nordic,nrf-twim";
+    status = "okay";
+    clock-frequency = <I2C_BITRATE_STANDARD>;
+    pinctrl-0 = <&i2c0_default>;
+    pinctrl-1 = <&i2c0_sleep>;
+    pinctrl-names = "default", "sleep";
+};

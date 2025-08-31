@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Code formatting script using clang-format
-# Usage: ./scripts/format.sh [check|fix|file <filename>]
+# Usage: ./scripts/format.sh [check|fix|file <filename>|tidy|tidy-fix|diff]
 # Default: check mode
 
 set -e
@@ -75,6 +75,30 @@ case "$MODE" in
             exit 0
         fi
         clang-tidy -p "$DB" $FILES
+        ;;
+    tidy-fix)
+        echo -e "${YELLOW}Running clang-tidy with fixes...${NC}"
+        if ! command -v clang-tidy >/dev/null 2>&1; then
+            echo -e "${RED}Error: clang-tidy not found${NC}"
+            echo "Install it (e.g., sudo apt-get install clang-tidy) and re-run."
+            exit 1
+        fi
+        # Ensure unit compile database exists
+        if [ ! -f "tests/unit/build/compile_commands.json" ]; then
+            echo -e "${YELLOW}Building unit tests to generate compile_commands.json...${NC}"
+            cmake -S tests/unit -B tests/unit/build -DCMAKE_BUILD_TYPE=Release -DCMAKE_EXPORT_COMPILE_COMMANDS=ON >/dev/null
+            cmake --build tests/unit/build -j >/dev/null
+        fi
+        DB="tests/unit/build"
+        echo "Using compile database: $DB"
+        FILES=$(jq -r '.[].file' "$DB/compile_commands.json" | grep -E '/app/src/(proto|commands|utils)/' | sort -u)
+        if [ -z "$FILES" ]; then
+            echo "No relevant sources found in compile database."
+            exit 0
+        fi
+        # Apply fixes and keep formatting consistent with .clang-format
+        clang-tidy -p "$DB" -fix -format-style=file $FILES
+        echo -e "${GREEN}✓ clang-tidy fixes applied${NC}"
         ;;
     check)
         echo -e "${YELLOW}Checking code formatting...${NC}"

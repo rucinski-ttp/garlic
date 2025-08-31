@@ -21,10 +21,18 @@ static void transport_cb(void *user, uint16_t session, const uint8_t *msg, size_
         return;
     }
     uint16_t status = (uint16_t)CMD_STATUS_ERR_UNSUPPORTED;
-    size_t payload_len = sizeof(resp_buf) - 6;
-    (void)command_dispatch(cmd_id, req, req_len, &resp_buf[6], &payload_len, &status);
+    size_t out_cap = sizeof(resp_buf) - 6;
+    size_t actual_len = out_cap; /* in: capacity, out: actual length */
+    (void)command_dispatch(cmd_id, req, req_len, &resp_buf[6], &actual_len, &status);
+    if (status != (uint16_t)CMD_STATUS_OK) {
+        /* Ensure we never pack garbage on error paths */
+        actual_len = 0;
+    } else if (actual_len > out_cap) {
+        /* Clamp to capacity if a handler misbehaves */
+        actual_len = out_cap;
+    }
     size_t packed_len = 0;
-    command_pack_response(cmd_id, status, &resp_buf[6], (uint16_t)payload_len, resp_buf,
+    command_pack_response(cmd_id, status, &resp_buf[6], (uint16_t)actual_len, resp_buf,
                           sizeof(resp_buf), &packed_len);
     if (g_t) {
         transport_send_message(g_t, session, resp_buf, packed_len, true);

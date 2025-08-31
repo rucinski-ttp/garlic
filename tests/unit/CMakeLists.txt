@@ -47,6 +47,9 @@ add_library(commands_host STATIC
     ${CMAKE_CURRENT_SOURCE_DIR}/../../app/src/commands/flash_read/src/flash_read.c
     ${CMAKE_CURRENT_SOURCE_DIR}/../../app/src/stack/cmd_transport/src/cmd_transport.c
     ${CMAKE_CURRENT_SOURCE_DIR}/../../app/src/commands/echo/src/echo.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../app/src/commands/i2c/src/i2c_cmd.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../app/src/commands/tmp119/src/tmp119_cmd.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../app/src/drivers/tmp119/src/tmp119.c
 )
 
 target_include_directories(commands_host PUBLIC
@@ -64,6 +67,8 @@ add_executable(garlic_tests
     ${CMAKE_CURRENT_SOURCE_DIR}/command/test_handlers.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/command/test_glue.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/command/test_glue_more.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_tmp119_commands.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/test_tmp119_init.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/command/stubs/system_iface_stub.c
     ${CMAKE_CURRENT_SOURCE_DIR}/command/stubs/reboot_stub.c
 )
@@ -86,6 +91,15 @@ target_link_libraries(garlic_tests
     GTest::gmock
 )
 
+# Link mocks for I2C async to satisfy TMP119/i2c commands in host tests
+add_library(i2c_async_mock STATIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/mocks/i2c_async_mock.c
+)
+target_include_directories(i2c_async_mock PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../app/src
+)
+target_link_libraries(garlic_tests i2c_async_mock)
+
 # UART DMA host build with test shim
 add_library(uart_dma_host STATIC
     ${CMAKE_CURRENT_SOURCE_DIR}/../../app/src/drivers/uart_dma/src/uart_dma.c
@@ -97,6 +111,15 @@ target_include_directories(uart_dma_host PUBLIC
 target_link_libraries(uart_dma_host PUBLIC circular_buffer_host)
 
 target_link_libraries(garlic_tests uart_dma_host)
+
+# Stub for project_assert in unit tests
+add_library(project_assert_stub STATIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/mocks/project_assert_stub.c
+)
+target_include_directories(project_assert_stub PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../app/src
+)
+target_link_libraries(garlic_tests project_assert_stub)
 
 include(GoogleTest)
 

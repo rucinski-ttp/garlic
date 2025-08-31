@@ -49,8 +49,12 @@ Set by `scripts/source.sh`:
 source scripts/source.sh
 
 # Code quality
-./scripts/check_format.sh   # Check code formatting (use in CI)
-./scripts/fix_format.sh     # Auto-fix formatting issues
+# Formatting (clang-format)
+./scripts/format.sh check   # Check formatting (matches CI)
+./scripts/format.sh fix     # Auto-fix formatting
+# Static analysis (clang-tidy)
+./scripts/format.sh tidy        # Tidy checks (no fixes)
+./scripts/format.sh tidy-fix    # Apply tidy fixes, then reformat
 
 # Build cycle
 ./scripts/build.sh          # Build application
