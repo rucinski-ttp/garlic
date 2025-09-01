@@ -1,4 +1,8 @@
-target_sources(app PRIVATE ${CMAKE_CURRENT_LIST_DIR}/src/app_runtime.c)
+target_sources(app PRIVATE
+    ${CMAKE_CURRENT_LIST_DIR}/src/app_runtime.c
+    ${CMAKE_CURRENT_LIST_DIR}/src/uart_runtime.c
+    ${CMAKE_CURRENT_LIST_DIR}/src/ble_runtime.c
+)
 target_include_directories(app PRIVATE ${CMAKE_CURRENT_LIST_DIR}/inc)
 
 # Notes for future maintainers:

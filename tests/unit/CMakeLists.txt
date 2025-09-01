@@ -50,6 +50,7 @@ add_library(commands_host STATIC
     ${CMAKE_CURRENT_SOURCE_DIR}/../../app/src/commands/i2c/src/i2c_cmd.c
     ${CMAKE_CURRENT_SOURCE_DIR}/../../app/src/commands/tmp119/src/tmp119_cmd.c
     ${CMAKE_CURRENT_SOURCE_DIR}/../../app/src/drivers/tmp119/src/tmp119.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../app/src/commands/ble_ctrl/src/ble_ctrl.c
 )
 
 target_include_directories(commands_host PUBLIC
@@ -111,6 +112,15 @@ target_include_directories(uart_dma_host PUBLIC
 target_link_libraries(uart_dma_host PUBLIC circular_buffer_host)
 
 target_link_libraries(garlic_tests uart_dma_host)
+
+# Stubs for BLE runtime control symbols on host
+add_library(ble_nus_stub STATIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/command/stubs/ble_nus_stub.c
+)
+target_include_directories(ble_nus_stub PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../app/src
+)
+target_link_libraries(commands_host PUBLIC ble_nus_stub)
 
 # Stub for project_assert in unit tests
 add_library(project_assert_stub STATIC

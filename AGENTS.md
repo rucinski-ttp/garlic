@@ -8,7 +8,7 @@ Welcome! This document orients AI agents (and humans) to the Garlic nRF52-DK pro
 - RTOS: Zephyr 3.7
 - Goal: DMA-based, non-blocking UART using a circular buffer, tested with unit tests (GTest) and hardware pytest.
 - Debug/logging: RTT enabled; UART used for data path and status messages.
-- Protocol: Layered serial command stack (UART DMA → Transport → Commands), documented in docs/PROTOCOL.md
+- Protocol: Layered command stack (UART DMA or BLE NUS → Transport → Commands), documented in docs/PROTOCOL.md
 
 ## Code Layout
 
@@ -23,7 +23,7 @@ Welcome! This document orients AI agents (and humans) to the Garlic nRF52-DK pro
 - `tests/`
   - `unit/` – GTest for circular buffer
   - `integration/` – Pytest for hardware UART with FTDI
-- `scripts/` – Helper scripts (env, build, flash, monitor UART, capture UART logs)
+- `scripts/` – Helper scripts (env, build, flash, monitor UART, capture UART logs, BLE temp demo)
 - `.github/workflows/ci.yml` – CI on local runner `dell-runner`
 
 ## Guardrails / Quality
@@ -60,12 +60,20 @@ cmake --build tests/unit/build -j
 ctest --test-dir tests/unit/build --output-on-failure
 ```
 
-### Hardware Pytest
+### Hardware Pytest (serial and BLE)
 
-Run against the FTDI port:
+Run against the FTDI port (serial):
 
 ```
 ./scripts/test_integration.sh --port /dev/ttyUSB0
+```
+
+BLE runs (same suite) can be invoked by MAC or name:
+
+```
+pytest -q tests/integration --run-hardware --interface ble --garlic-ble-address <MAC>
+# or
+pytest -q tests/integration --run-hardware --interface ble --garlic-ble-name GarlicDK
 ```
 
 This runs with `--run-hardware` and exercises:
@@ -75,11 +83,12 @@ This runs with `--run-hardware` and exercises:
 - Continuous data stream handling
 - Upcoming: transport framing and command handlers via Python client classes
 
-## DMA UART Behavior
+## UART & BLE Behavior
 
 - RX uses async UARTE double buffering. RX inactivity timeout (20 ms) is used so partial lines are delivered promptly.
-- TX uses a circular buffer; `uart_dma_process()` drains it.
+- TX uses a circular buffer over UART; NUS notifications over BLE.
 - The app emits one status line per second, and one echo line per newline received.
+- LED1 indicates BLE status: blink when advertising, solid when connected.
 
 ## CI
 
@@ -126,6 +135,14 @@ Notes:
   - `./scripts/rtt_capture.sh --tool jlink` (starts `JLinkGDBServer` + `JLinkRTTClient`)
 - Direct Python usage:
   - `python3 scripts/rtt_capture.py --tool auto --outfile logs/rtt.log`
+  - The helper enforces a default 10s timeout; pass `--timeout` to override.
+
+## BLE Tips for Agents
+
+- Prefer connecting by MAC address when available to avoid scan races (`--garlic-ble-address`).
+- The BLE fixture reconnects automatically after device reboots and retries writes.
+- A simple demo to stream temperature over BLE is provided:
+  - `python3 scripts/ble_temp_stream.py --address <MAC>` or `--name GarlicDK`
 - Environment overrides:
   - `GARLIC_RTT_TOOL`, `GARLIC_RTT_DEVICE`, `GARLIC_RTT_SPEED`, `GARLIC_RTT_CHANNEL`
 

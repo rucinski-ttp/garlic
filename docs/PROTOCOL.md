@@ -1,6 +1,10 @@
 # Garlic Serial Protocol
 
 This document specifies the transport framing and command payloads used over the UART DMA data channel.
+The same framing is also used over BLE by carrying frames within the Nordic
+UART Service (NUS): frames are written to the NUS RX characteristic and
+responses are delivered via NUS TX notifications. The protocol and command set
+are identical regardless of link.
 
 The protocol is layered to ensure clear responsibilities and testability:
 

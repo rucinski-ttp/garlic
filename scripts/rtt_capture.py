@@ -81,6 +81,12 @@ def parse_args():
         action="store_true",
         help="Do not prefix lines with timestamps",
     )
+    p.add_argument(
+        "--timeout",
+        type=int,
+        default=None,
+        help="Capture duration in seconds (0 for infinite). If not provided, caller may default.",
+    )
     return p.parse_args()
 
 
@@ -123,7 +129,16 @@ def run_jlink_logger(args, out_path: Path) -> int:
         with out_path.open("a", buffering=1) as fp:
             # Lightweight follow loop
             last_size = out_path.stat().st_size if out_path.exists() else 0
+            start_t = time.time()
             while True:
+                # Timeout handling
+                if args.timeout is not None and args.timeout > 0:
+                    if time.time() - start_t >= args.timeout:
+                        try:
+                            proc.terminate()
+                        except Exception:
+                            pass
+                        return 0
                 # Echo any tool output lines too
                 if proc.stdout and not proc.stdout.closed:
                     while True:
@@ -199,7 +214,12 @@ def run_jlink_gdb_client(args, out_path: Path) -> int:
 
     try:
         with out_path.open("a", buffering=1) as fp:
+            start_t = time.time()
             while True:
+                # Timeout handling
+                if args.timeout is not None and args.timeout > 0:
+                    if time.time() - start_t >= args.timeout:
+                        return 0
                 line = client_proc.stdout.readline()
                 if not line:
                     # Check processes still alive

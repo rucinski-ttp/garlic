@@ -18,6 +18,7 @@ if str(_FIXTURES_DIR) not in sys.path:
     sys.path.insert(0, str(_FIXTURES_DIR))
 
 from serial_io import SerialGarlicDevice, GarlicDeviceConfig, find_garlic_device
+from ble_io import BLEGarlicDevice, BLEDeviceConfig
 from fixtures.rtt import RTTCapture
 from fixtures.probe import DebugProbe
 
@@ -45,22 +46,39 @@ def garlic_port() -> str:
 
 
 @pytest.fixture(scope="function")
-def serial_garlic_device(garlic_port: str) -> Generator[SerialGarlicDevice, None, None]:
+def garlic_device() -> Generator[object, None, None]:
+    """Interface-agnostic Garlic device fixture (serial or BLE).
+
+    Select with --interface=serial|ble (default: serial).
     """
-    Fixture providing a SerialGarlicDevice instance.
-    
-    Automatically connects and disconnects for each test.
-    """
-    config = GarlicDeviceConfig(port=garlic_port)
-    device = SerialGarlicDevice(config)
-    
-    # Log device info
-    info = device.get_device_info()
-    logger.info(f"Test device info: {info}")
-    
-    yield device
-    
-    device.disconnect()
+    interface = getattr(pytest, 'garlic_interface', 'serial')
+    dev = None
+    if interface == 'serial':
+        port = pytest.garlic_port if hasattr(pytest, 'garlic_port') else None
+        if not port:
+            port = find_garlic_device()
+        if not port:
+            pytest.skip("No Garlic serial device found; specify --garlic-port")
+        cfg = GarlicDeviceConfig(port=port, baudrate=getattr(pytest, 'garlic_baudrate', 115200))
+        dev = SerialGarlicDevice(cfg)
+    elif interface == 'ble':
+        name = getattr(pytest, 'garlic_ble_name', 'GarlicDK')
+        addr = getattr(pytest, 'garlic_ble_address', None) if hasattr(pytest, 'garlic_ble_address') else None
+        cfg = BLEDeviceConfig(name=name, address=addr)
+        try:
+            dev = BLEGarlicDevice(cfg)
+        except Exception as e:
+            pytest.skip(f"BLE device not available: {e}")
+    else:
+        raise RuntimeError(f"Unknown interface: {interface}")
+
+    try:
+        yield dev
+    finally:
+        try:
+            dev.disconnect()
+        except Exception:
+            pass
 
 
 def pytest_addoption(parser):
@@ -83,6 +101,25 @@ def pytest_addoption(parser):
         action="store_true",
         default=False,
         help="Enable running hardware tests (otherwise they are skipped)",
+    )
+    parser.addoption(
+        "--interface",
+        action="store",
+        default="serial",
+        choices=["serial", "ble"],
+        help="Device interface to use for tests",
+    )
+    parser.addoption(
+        "--garlic-ble-name",
+        action="store",
+        default="GarlicDK",
+        help="BLE advertised name prefix to match (NUS)",
+    )
+    parser.addoption(
+        "--garlic-ble-address",
+        action="store",
+        default=None,
+        help="BLE MAC address to connect to (skips scan)",
     )
 
     # RTT capture options
@@ -107,6 +144,9 @@ def pytest_configure(config):
     pytest.run_hardware = config.getoption("--run-hardware")
     pytest.garlic_rtt_tool = config.getoption("--garlic-rtt-tool")
     pytest.garlic_rtt_channel = int(config.getoption("--garlic-rtt-channel"))
+    pytest.garlic_interface = config.getoption("--interface")
+    pytest.garlic_ble_address = config.getoption("--garlic-ble-address")
+    pytest.garlic_ble_name = config.getoption("--garlic-ble-name")
     
     # Add markers
     config.addinivalue_line(
