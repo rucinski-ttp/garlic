@@ -4,8 +4,8 @@
 #include <gmock/gmock.h>
 
 extern "C" {
-#include "drivers/uart_dma/inc/uart_dma.h"
-#include "drivers/uart_dma/inc/uart_dma_test.h"
+#include "drivers/uart/inc/uart.h"
+#include "drivers/uart/inc/uart_test.h"
 }
 
 using ::testing::Eq;
@@ -93,17 +93,17 @@ TEST(UartDma, RxStoppedUpdatesStatsAndRestart)
     // Simulate RX stopped with different reasons; expect stats updated and restart attempted
     uart_event e{}; e.type = UART_RX_STOPPED; e.data.rx_stop.reason = UART_ERROR_FRAMING;
     uart_dma_test_invoke_event(&e);
-    uart_statistics s{}; uart_dma_get_statistics(&s);
+    uart_statistics s{}; grlc_uart_get_statistics(&s);
     EXPECT_EQ(s.framing_errors, 1u);
 
     e.data.rx_stop.reason = UART_ERROR_PARITY;
     uart_dma_test_invoke_event(&e);
-    uart_dma_get_statistics(&s);
+    grlc_uart_get_statistics(&s);
     EXPECT_EQ(s.parity_errors, 1u);
 
     e.data.rx_stop.reason = UART_ERROR_OVERRUN;
     uart_dma_test_invoke_event(&e);
-    uart_dma_get_statistics(&s);
+    grlc_uart_get_statistics(&s);
     EXPECT_EQ(s.rx_overruns, 1u);
 
     // We expect rx_enable to have been called on each stop when initialized

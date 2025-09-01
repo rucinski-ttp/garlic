@@ -9,11 +9,11 @@
 #if defined(CONFIG_USE_SEGGER_RTT)
 #include <SEGGER_RTT.h>
 #endif
-#include "drivers/uart_dma/inc/uart_dma.h"
+#include "drivers/uart/inc/uart.h"
 LOG_MODULE_REGISTER(project_assert, LOG_LEVEL_ERR);
 #endif
 
-void project_fatal(const char *msg)
+void grlc_assert_fatal(const char *msg)
 {
 #ifdef __ZEPHYR__
     if (!msg)
@@ -27,12 +27,12 @@ void project_fatal(const char *msg)
     printk("FATAL: %s\r\n", msg);
     LOG_ERR("%s", msg);
     /* Try to emit over UART DMA as best effort */
-    (void)uart_dma_send((const uint8_t *)"FATAL: ", 7);
-    (void)uart_dma_send((const uint8_t *)msg, strlen(msg));
-    (void)uart_dma_send((const uint8_t *)"\r\n", 2);
+    (void)grlc_uart_send((const uint8_t *)"FATAL: ", 7);
+    (void)grlc_uart_send((const uint8_t *)msg, strlen(msg));
+    (void)grlc_uart_send((const uint8_t *)"\r\n", 2);
     /* Halt loop: keep processing UART DMA to flush */
     while (1) {
-        uart_dma_process();
+        grlc_uart_process();
         k_msleep(100);
     }
 #else
@@ -42,4 +42,9 @@ void project_fatal(const char *msg)
     fprintf(stderr, "FATAL: %s\n", msg);
     abort();
 #endif
+}
+
+void project_fatal(const char *msg)
+{
+    grlc_assert_fatal(msg);
 }

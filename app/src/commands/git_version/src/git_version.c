@@ -24,7 +24,7 @@ static command_status_t git_version_handler(const uint8_t *in, size_t in_len, ui
     return CMD_STATUS_OK;
 }
 
-void command_register_git_version(void)
+void grlc_cmd_register_git_version(void)
 {
-    (void)command_register(CMD_ID_GET_GIT_VERSION, git_version_handler);
+    (void)grlc_cmd_register(CMD_ID_GET_GIT_VERSION, git_version_handler);
 }

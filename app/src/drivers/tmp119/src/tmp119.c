@@ -13,7 +13,7 @@ LOG_MODULE_REGISTER(tmp119, CONFIG_LOG_DEFAULT_LEVEL);
 #endif
 
 #include <stdio.h>
-#include "drivers/i2c_async/inc/i2c_async.h"
+#include "drivers/i2c/inc/i2c.h"
 #include "drivers/tmp119/inc/tmp119.h"
 #include "utils/assert/inc/project_assert.h"
 
@@ -36,7 +36,7 @@ static bool s_verified[128];
 static int reg_read16(uint8_t addr7, uint8_t reg, uint16_t *out)
 {
     uint8_t rx[2] = {0};
-    int rc = i2c_blocking_write_read(addr7_to_zephyr(addr7), &reg, 1, rx, 2, 100);
+    int rc = grlc_i2c_blocking_write_read(addr7_to_zephyr(addr7), &reg, 1, rx, 2, 100);
     if (rc)
         return rc;
     /* TMP119 returns MSB first; assemble big-endian to host */
@@ -50,12 +50,12 @@ static int reg_write16(uint8_t addr7, uint8_t reg, uint16_t val)
     tx[0] = reg;
     tx[1] = (uint8_t)((val >> 8) & 0xFF);
     tx[2] = (uint8_t)(val & 0xFF);
-    return i2c_blocking_write(addr7_to_zephyr(addr7), tx, sizeof(tx), 100);
+    return grlc_i2c_blocking_write(addr7_to_zephyr(addr7), tx, sizeof(tx), 100);
 }
 
-int tmp119_init(void)
+int grlc_tmp119_init(void)
 {
-    return i2c_async_init();
+    return grlc_i2c_init();
 }
 
 static int tmp119_try_init_addr(uint8_t addr7)
@@ -76,9 +76,9 @@ static int tmp119_try_init_addr(uint8_t addr7)
     return 0;
 }
 
-int tmp119_boot_init(void)
+int grlc_tmp119_boot_init(void)
 {
-    int rc = tmp119_init();
+    int rc = grlc_tmp119_init();
     if (rc)
         return rc;
     int count = 0;
@@ -89,7 +89,7 @@ int tmp119_boot_init(void)
             continue;
         }
         /* Ping first to avoid delays */
-        if (i2c_ping(a) != 0) {
+        if (grlc_i2c_ping(a) != 0) {
             continue;
         }
         if (tmp119_try_init_addr(a) == 0) {
@@ -102,7 +102,7 @@ int tmp119_boot_init(void)
 static void ensure_initialized(uint8_t addr7)
 {
     if (!s_verified[addr7 & 0x7F]) {
-        int rc = tmp119_init();
+        int rc = grlc_tmp119_init();
         if (rc == 0) {
             (void)tmp119_try_init_addr(addr7);
         }
@@ -110,11 +110,11 @@ static void ensure_initialized(uint8_t addr7)
     if (!s_verified[addr7 & 0x7F]) {
         char msg[64];
         snprintf(msg, sizeof msg, "TMP119 not initialized at 0x%02x", addr7 & 0x7F);
-        project_fatal(msg);
+        grlc_assert_fatal(msg);
     }
 }
 
-int tmp119_read_device_id(uint8_t addr7, uint16_t *id_out)
+int grlc_tmp119_read_device_id(uint8_t addr7, uint16_t *id_out)
 {
     if (!id_out)
         return -EINVAL;
@@ -122,7 +122,7 @@ int tmp119_read_device_id(uint8_t addr7, uint16_t *id_out)
     return reg_read16(addr7, TMP119_REG_DEVICE_ID, id_out);
 }
 
-int tmp119_read_temperature_raw(uint8_t addr7, uint16_t *raw_out)
+int grlc_tmp119_read_temperature_raw(uint8_t addr7, uint16_t *raw_out)
 {
     if (!raw_out)
         return -EINVAL;
@@ -130,7 +130,7 @@ int tmp119_read_temperature_raw(uint8_t addr7, uint16_t *raw_out)
     return reg_read16(addr7, TMP119_REG_TEMPERATURE, raw_out);
 }
 
-int tmp119_read_temperature_mC(uint8_t addr7, int32_t *mC_out)
+int grlc_tmp119_read_temperature_mC(uint8_t addr7, int32_t *mC_out)
 {
     if (!mC_out)
         return -EINVAL;
@@ -146,7 +146,7 @@ int tmp119_read_temperature_mC(uint8_t addr7, int32_t *mC_out)
     return 0;
 }
 
-int tmp119_read_config(uint8_t addr7, uint16_t *cfg_out)
+int grlc_tmp119_read_config(uint8_t addr7, uint16_t *cfg_out)
 {
     if (!cfg_out)
         return -EINVAL;
@@ -154,13 +154,13 @@ int tmp119_read_config(uint8_t addr7, uint16_t *cfg_out)
     return reg_read16(addr7, TMP119_REG_CONFIG, cfg_out);
 }
 
-int tmp119_write_config(uint8_t addr7, uint16_t cfg)
+int grlc_tmp119_write_config(uint8_t addr7, uint16_t cfg)
 {
     ensure_initialized(addr7);
     return reg_write16(addr7, TMP119_REG_CONFIG, cfg);
 }
 
-int tmp119_read_high_limit(uint8_t addr7, uint16_t *val_out)
+int grlc_tmp119_read_high_limit(uint8_t addr7, uint16_t *val_out)
 {
     if (!val_out)
         return -EINVAL;
@@ -168,13 +168,13 @@ int tmp119_read_high_limit(uint8_t addr7, uint16_t *val_out)
     return reg_read16(addr7, TMP119_REG_HIGH_LIMIT, val_out);
 }
 
-int tmp119_write_high_limit(uint8_t addr7, uint16_t val)
+int grlc_tmp119_write_high_limit(uint8_t addr7, uint16_t val)
 {
     ensure_initialized(addr7);
     return reg_write16(addr7, TMP119_REG_HIGH_LIMIT, val);
 }
 
-int tmp119_read_low_limit(uint8_t addr7, uint16_t *val_out)
+int grlc_tmp119_read_low_limit(uint8_t addr7, uint16_t *val_out)
 {
     if (!val_out)
         return -EINVAL;
@@ -182,13 +182,13 @@ int tmp119_read_low_limit(uint8_t addr7, uint16_t *val_out)
     return reg_read16(addr7, TMP119_REG_LOW_LIMIT, val_out);
 }
 
-int tmp119_write_low_limit(uint8_t addr7, uint16_t val)
+int grlc_tmp119_write_low_limit(uint8_t addr7, uint16_t val)
 {
     ensure_initialized(addr7);
     return reg_write16(addr7, TMP119_REG_LOW_LIMIT, val);
 }
 
-int tmp119_unlock_eeprom(uint8_t addr7)
+int grlc_tmp119_unlock_eeprom(uint8_t addr7)
 {
     ensure_initialized(addr7);
     return reg_write16(addr7, TMP119_REG_EE_UNLOCK, 0x0001);
@@ -208,7 +208,7 @@ static inline uint8_t ee_index_to_reg(uint8_t index)
     }
 }
 
-int tmp119_read_eeprom(uint8_t addr7, uint8_t index, uint16_t *val_out)
+int grlc_tmp119_read_eeprom(uint8_t addr7, uint8_t index, uint16_t *val_out)
 {
     if (!val_out)
         return -EINVAL;
@@ -219,7 +219,7 @@ int tmp119_read_eeprom(uint8_t addr7, uint8_t index, uint16_t *val_out)
     return reg_read16(addr7, reg, val_out);
 }
 
-int tmp119_write_eeprom(uint8_t addr7, uint8_t index, uint16_t val)
+int grlc_tmp119_write_eeprom(uint8_t addr7, uint8_t index, uint16_t val)
 {
     uint8_t reg = ee_index_to_reg(index);
     if (reg == 0xFF)
@@ -228,7 +228,7 @@ int tmp119_write_eeprom(uint8_t addr7, uint8_t index, uint16_t val)
     return reg_write16(addr7, reg, val);
 }
 
-int tmp119_read_offset(uint8_t addr7, uint16_t *val_out)
+int grlc_tmp119_read_offset(uint8_t addr7, uint16_t *val_out)
 {
     if (!val_out)
         return -EINVAL;
@@ -236,13 +236,13 @@ int tmp119_read_offset(uint8_t addr7, uint16_t *val_out)
     return reg_read16(addr7, TMP119_REG_TEMP_OFFSET, val_out);
 }
 
-int tmp119_write_offset(uint8_t addr7, uint16_t val)
+int grlc_tmp119_write_offset(uint8_t addr7, uint16_t val)
 {
     ensure_initialized(addr7);
     return reg_write16(addr7, TMP119_REG_TEMP_OFFSET, val);
 }
 
-void tmp119_require_initialized(uint8_t addr7)
+void grlc_tmp119_require_initialized(uint8_t addr7)
 {
     ensure_initialized(addr7);
 }

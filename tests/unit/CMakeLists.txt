@@ -58,18 +58,20 @@ target_include_directories(commands_host PUBLIC
 )
 
 add_executable(garlic_tests
-    ${CMAKE_CURRENT_SOURCE_DIR}/test_circular_buffer.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/test_build_info.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/utils/test_circular_buffer.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/misc/test_build_info.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/transport/test_crc32.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/transport/test_transport_encode.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/transport/test_transport_parse.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/transport/test_transport_edges.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/transport/test_transport_api.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/transport/test_transport_handle.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/command/test_command_core.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/command/test_handlers.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/command/test_glue.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/command/test_glue_more.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/test_tmp119_commands.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/test_tmp119_init.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/command/test_tmp119_commands.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/drivers/tmp119/test_tmp119_init.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/command/stubs/system_iface_stub.c
     ${CMAKE_CURRENT_SOURCE_DIR}/command/stubs/reboot_stub.c
 )
@@ -103,7 +105,7 @@ target_link_libraries(garlic_tests i2c_async_mock)
 
 # UART DMA host build with test shim
 add_library(uart_dma_host STATIC
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../app/src/drivers/uart_dma/src/uart_dma.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../app/src/drivers/uart/src/uart_dma.c
 )
 target_compile_definitions(uart_dma_host PRIVATE UART_DMA_TESTING=1)
 target_include_directories(uart_dma_host PUBLIC

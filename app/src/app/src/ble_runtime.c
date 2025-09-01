@@ -17,10 +17,11 @@ static const struct gpio_dt_spec ble_led = GPIO_DT_SPEC_GET(LED1_NODE, gpios);
 static uint32_t s_last_led_time;
 
 static struct transport_ctx s_ble_transport;
+static struct cmd_transport_binding s_ble_cmd;
 
 static size_t lower_write_ble(const uint8_t *data, size_t len)
 {
-    return ble_nus_send(data, len);
+    return grlc_ble_send(data, len);
 }
 
 static const struct transport_lower_if lower_if_ble = {
@@ -31,33 +32,35 @@ static void ble_rx_shim(const uint8_t *data, size_t len, void *user)
 {
     struct transport_ctx *t = (struct transport_ctx *)user;
     if (t && data && len) {
-        transport_rx_bytes(t, data, len);
+        grlc_transport_rx_bytes(t, data, len);
     }
 }
 
-void ble_runtime_init(void)
+void grlc_ble_runtime_init(void)
 {
     if (gpio_is_ready_dt(&ble_led)) {
         (void)gpio_pin_configure_dt(&ble_led, GPIO_OUTPUT_INACTIVE);
     }
 
-    transport_init(&s_ble_transport, &lower_if_ble, cmd_get_transport_cb(), &s_ble_transport);
-    int ble_rc = ble_nus_init(ble_rx_shim, &s_ble_transport);
+    grlc_cmd_transport_bind(&s_ble_cmd, &s_ble_transport);
+    grlc_transport_init(&s_ble_transport, &lower_if_ble, grlc_cmd_get_transport_cb(), &s_ble_cmd);
+    int ble_rc = grlc_ble_init(ble_rx_shim, &s_ble_transport);
     if (ble_rc == 0) {
-        printk("BLE ready\r\n");
+        LOG_INF("BLE ready");
     } else {
         LOG_WRN("BLE init failed: %d", ble_rc);
     }
+    grlc_cmd_transport_init();
 }
 
-void ble_runtime_tick(void)
+void grlc_ble_runtime_tick(void)
 {
     if (!gpio_is_ready_dt(&ble_led)) {
         return;
     }
     uint32_t now = k_uptime_get_32();
     bool adv = false, connected = false;
-    ble_nus_get_status(&adv, &connected);
+    grlc_ble_get_status(&adv, &connected);
     if (connected) {
         gpio_pin_set_dt(&ble_led, 1);
     } else if (adv) {
@@ -72,10 +75,10 @@ void ble_runtime_tick(void)
 
 #else /* !CONFIG_BT || !CONFIG_BT_ZEPHYR_NUS */
 
-void ble_runtime_init(void)
+void grlc_ble_runtime_init(void)
 {
 }
-void ble_runtime_tick(void)
+void grlc_ble_runtime_tick(void)
 {
 }
 

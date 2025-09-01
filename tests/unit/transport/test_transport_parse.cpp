@@ -50,15 +50,15 @@ TEST(TransportParse, SingleFrameHappyPath)
 {
     transport_ctx t{}; Capture cap{};
     transport_lower_if lif{devnull_write};
-    transport_init(&t, &lif, on_msg, &cap);
+    grlc_transport_init(&t, &lif, on_msg, &cap);
 
     std::vector<uint8_t> payload = {1,2,3,4,5};
     auto f = make_frame(0x1111, 0, 1, payload, TRANSPORT_FLAG_START | TRANSPORT_FLAG_END);
 
     // Feed in arbitrary chunks
-    transport_rx_bytes(&t, f.data(), 3);
-    transport_rx_bytes(&t, f.data()+3, 7);
-    transport_rx_bytes(&t, f.data()+10, f.size()-10);
+    grlc_transport_rx_bytes(&t, f.data(), 3);
+    grlc_transport_rx_bytes(&t, f.data()+3, 7);
+    grlc_transport_rx_bytes(&t, f.data()+10, f.size()-10);
 
     EXPECT_EQ(cap.session, 0x1111);
     ASSERT_EQ(cap.msg.size(), payload.size());
@@ -69,22 +69,22 @@ TEST(TransportParse, ResyncWithNoiseAndCRCError)
 {
     transport_ctx t{}; Capture cap{};
     transport_lower_if lif{devnull_write};
-    transport_init(&t, &lif, on_msg, &cap);
+    grlc_transport_init(&t, &lif, on_msg, &cap);
 
     std::vector<uint8_t> payload = {9,8,7};
     auto f = make_frame(0x2222, 0, 1, payload, TRANSPORT_FLAG_START | TRANSPORT_FLAG_END | TRANSPORT_FLAG_RESP);
 
     std::vector<uint8_t> noise = {0x00, 0xFF, 0xAA};
-    transport_rx_bytes(&t, noise.data(), noise.size());
+    grlc_transport_rx_bytes(&t, noise.data(), noise.size());
 
     // Corrupt one byte in CRC
     auto bad = f;
     bad[bad.size()-1] ^= 0x1;
-    transport_rx_bytes(&t, bad.data(), bad.size()); // should be dropped
+    grlc_transport_rx_bytes(&t, bad.data(), bad.size()); // should be dropped
     EXPECT_TRUE(cap.msg.empty());
 
     // Now feed good frame; parser should resync and deliver
-    transport_rx_bytes(&t, f.data(), f.size());
+    grlc_transport_rx_bytes(&t, f.data(), f.size());
     EXPECT_EQ(cap.session, 0x2222);
     ASSERT_EQ(cap.msg.size(), payload.size());
     EXPECT_TRUE(cap.is_resp);
@@ -94,15 +94,15 @@ TEST(TransportParse, MultiFragmentReassembly)
 {
     transport_ctx t{}; Capture cap{};
     transport_lower_if lif{devnull_write};
-    transport_init(&t, &lif, on_msg, &cap);
+    grlc_transport_init(&t, &lif, on_msg, &cap);
 
     const size_t maxp = TRANSPORT_FRAME_MAX_PAYLOAD;
     std::vector<uint8_t> payload(maxp + 7, 0xAB);
     auto f0 = make_frame(0x3333, 0, 2, std::vector<uint8_t>(payload.begin(), payload.begin()+maxp), TRANSPORT_FLAG_START);
     auto f1 = make_frame(0x3333, 1, 2, std::vector<uint8_t>(payload.begin()+maxp, payload.end()), TRANSPORT_FLAG_END);
 
-    transport_rx_bytes(&t, f0.data(), f0.size());
+    grlc_transport_rx_bytes(&t, f0.data(), f0.size());
     EXPECT_TRUE(cap.msg.empty());
-    transport_rx_bytes(&t, f1.data(), f1.size());
+    grlc_transport_rx_bytes(&t, f1.data(), f1.size());
     ASSERT_EQ(cap.msg.size(), payload.size());
 }

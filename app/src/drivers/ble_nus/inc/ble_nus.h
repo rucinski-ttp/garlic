@@ -28,7 +28,7 @@ typedef void (*ble_nus_rx_cb_t)(const uint8_t *data, size_t len, void *user);
  * @param user  Opaque pointer passed back to @p rx_cb.
  * @return 0 on success, negative errno on failure.
  */
-int ble_nus_init(ble_nus_rx_cb_t rx_cb, void *user);
+int grlc_ble_init(ble_nus_rx_cb_t rx_cb, void *user);
 
 /**
  * @brief Send data over BLE NUS (notifications).
@@ -40,7 +40,7 @@ int ble_nus_init(ble_nus_rx_cb_t rx_cb, void *user);
  * @param len  Number of bytes to send
  * @return number of bytes consumed (<= len)
  */
-size_t ble_nus_send(const uint8_t *data, size_t len);
+size_t grlc_ble_send(const uint8_t *data, size_t len);
 
 /**
  * @brief Enable or disable advertising.
@@ -48,7 +48,7 @@ size_t ble_nus_send(const uint8_t *data, size_t len);
  * @param enable true to start advertising; false to stop
  * @return 0 on success, negative errno on failure
  */
-int ble_nus_set_advertising(bool enable);
+int grlc_ble_set_advertising(bool enable);
 
 /**
  * @brief Query BLE advertising/connection status.
@@ -56,14 +56,15 @@ int ble_nus_set_advertising(bool enable);
  * @param[out] advertising true if advertising is active
  * @param[out] connected   true if at least one connection is active
  */
-void ble_nus_get_status(bool *advertising, bool *connected);
+void grlc_ble_get_status(bool *advertising, bool *connected);
 
 /**
  * @brief Get last disconnect reason (HCI error code semantics).
  *
  * @return last disconnect reason code (0 if none)
  */
-uint8_t ble_nus_last_disc_reason(void);
+uint8_t grlc_ble_last_disc_reason(void);
+/* Legacy names removed; use grlc_ble_* */
 
 #ifdef __cplusplus
 }

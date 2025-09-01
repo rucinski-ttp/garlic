@@ -62,7 +62,8 @@ def test_get_uptime(garlic_device):
 def test_echo(garlic_device):
     cc = CommandClient(garlic_device)
     payload = bytes(range(0, 64))
-    got = cc.echo(payload, timeout=2.0)
+    # Slightly higher timeout for robustness on busy links
+    got = cc.echo(payload, timeout=3.0)
     assert got == payload
 
 

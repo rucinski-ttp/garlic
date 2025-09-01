@@ -6,12 +6,19 @@
 #include "utils/circular_buffer/inc/circular_buffer.h"
 #include <string.h>
 
+/**
+ * @brief Advance an index in a circular space.
+ * @param idx  Current index.
+ * @param inc  Increment to apply.
+ * @param size Ring capacity.
+ * @return New index modulo @p size.
+ */
 static inline size_t cb_advance(size_t idx, size_t inc, size_t size)
 {
     return (idx + inc) % size;
 }
 
-int circular_buffer_init(circular_buffer_t *cb, uint8_t *buffer, size_t size)
+int grlc_cb_init(circular_buffer_t *cb, uint8_t *buffer, size_t size)
 {
     if (cb == NULL || buffer == NULL || size < 2) { /* need at least 2 to keep one free */
         return -1;
@@ -23,7 +30,7 @@ int circular_buffer_init(circular_buffer_t *cb, uint8_t *buffer, size_t size)
     return 0;
 }
 
-void circular_buffer_reset(circular_buffer_t *cb)
+void grlc_cb_reset(circular_buffer_t *cb)
 {
     if (!cb) {
         return;
@@ -32,7 +39,7 @@ void circular_buffer_reset(circular_buffer_t *cb)
     cb->tail = 0;
 }
 
-bool circular_buffer_is_empty(const circular_buffer_t *cb)
+bool grlc_cb_is_empty(const circular_buffer_t *cb)
 {
     if (!cb) {
         return true;
@@ -40,7 +47,7 @@ bool circular_buffer_is_empty(const circular_buffer_t *cb)
     return cb->head == cb->tail;
 }
 
-bool circular_buffer_is_full(const circular_buffer_t *cb)
+bool grlc_cb_is_full(const circular_buffer_t *cb)
 {
     if (!cb) {
         return true;
@@ -48,7 +55,7 @@ bool circular_buffer_is_full(const circular_buffer_t *cb)
     return cb_advance(cb->head, 1, cb->size) == cb->tail;
 }
 
-size_t circular_buffer_available(const circular_buffer_t *cb)
+size_t grlc_cb_available(const circular_buffer_t *cb)
 {
     if (!cb) {
         return 0;
@@ -59,31 +66,21 @@ size_t circular_buffer_available(const circular_buffer_t *cb)
     return cb->size - (cb->tail - cb->head);
 }
 
-size_t circular_buffer_free_space(const circular_buffer_t *cb)
+size_t grlc_cb_free_space(const circular_buffer_t *cb)
 {
     if (!cb) {
         return 0;
     }
     /* Always keep one byte free */
-    return (cb->size - 1) - circular_buffer_available(cb);
+    return (cb->size - 1) - grlc_cb_available(cb);
 }
 
-bool circular_buffer_put(circular_buffer_t *cb, uint8_t data)
-{
-    if (!cb || circular_buffer_is_full(cb)) {
-        return false;
-    }
-    cb->buffer[cb->head] = data;
-    cb->head = cb_advance(cb->head, 1, cb->size);
-    return true;
-}
-
-size_t circular_buffer_write(circular_buffer_t *cb, const uint8_t *data, size_t len)
+size_t grlc_cb_write(circular_buffer_t *cb, const uint8_t *data, size_t len)
 {
     if (!cb || !data || len == 0) {
         return 0;
     }
-    size_t free_space = circular_buffer_free_space(cb);
+    size_t free_space = grlc_cb_free_space(cb);
     size_t to_write = len < free_space ? len : free_space;
     for (size_t i = 0; i < to_write; i++) {
         cb->buffer[cb->head] = data[i];
@@ -92,22 +89,12 @@ size_t circular_buffer_write(circular_buffer_t *cb, const uint8_t *data, size_t 
     return to_write;
 }
 
-bool circular_buffer_get(circular_buffer_t *cb, uint8_t *data)
-{
-    if (!cb || !data || circular_buffer_is_empty(cb)) {
-        return false;
-    }
-    *data = cb->buffer[cb->tail];
-    cb->tail = cb_advance(cb->tail, 1, cb->size);
-    return true;
-}
-
-size_t circular_buffer_read(circular_buffer_t *cb, uint8_t *data, size_t len)
+size_t grlc_cb_read(circular_buffer_t *cb, uint8_t *data, size_t len)
 {
     if (!cb || !data || len == 0) {
         return 0;
     }
-    size_t avail = circular_buffer_available(cb);
+    size_t avail = grlc_cb_available(cb);
     size_t to_read = len < avail ? len : avail;
     for (size_t i = 0; i < to_read; i++) {
         data[i] = cb->buffer[cb->tail];
@@ -116,12 +103,12 @@ size_t circular_buffer_read(circular_buffer_t *cb, uint8_t *data, size_t len)
     return to_read;
 }
 
-size_t circular_buffer_peek(const circular_buffer_t *cb, uint8_t *data, size_t len)
+size_t grlc_cb_peek(const circular_buffer_t *cb, uint8_t *data, size_t len)
 {
     if (!cb || !data || len == 0) {
         return 0;
     }
-    size_t avail = circular_buffer_available(cb);
+    size_t avail = grlc_cb_available(cb);
     size_t to_peek = len < avail ? len : avail;
     size_t t = cb->tail;
     for (size_t i = 0; i < to_peek; i++) {
@@ -131,9 +118,9 @@ size_t circular_buffer_peek(const circular_buffer_t *cb, uint8_t *data, size_t l
     return to_peek;
 }
 
-int circular_buffer_get_read_block(const circular_buffer_t *cb, uint8_t **data_ptr, size_t *len)
+int grlc_cb_get_read_block(const circular_buffer_t *cb, uint8_t **data_ptr, size_t *len)
 {
-    if (!cb || !data_ptr || !len || circular_buffer_is_empty(cb)) {
+    if (!cb || !data_ptr || !len || grlc_cb_is_empty(cb)) {
         return -1;
     }
     if (cb->head >= cb->tail) {
@@ -146,19 +133,19 @@ int circular_buffer_get_read_block(const circular_buffer_t *cb, uint8_t **data_p
     return 0;
 }
 
-void circular_buffer_advance_read(circular_buffer_t *cb, size_t len)
+void grlc_cb_advance_read(circular_buffer_t *cb, size_t len)
 {
     if (!cb || len == 0) {
         return;
     }
-    size_t avail = circular_buffer_available(cb);
+    size_t avail = grlc_cb_available(cb);
     size_t adv = len < avail ? len : avail;
     cb->tail = cb_advance(cb->tail, adv, cb->size);
 }
 
-int circular_buffer_get_write_block(circular_buffer_t *cb, uint8_t **data_ptr, size_t *len)
+int grlc_cb_get_write_block(circular_buffer_t *cb, uint8_t **data_ptr, size_t *len)
 {
-    if (!cb || !data_ptr || !len || circular_buffer_is_full(cb)) {
+    if (!cb || !data_ptr || !len || grlc_cb_is_full(cb)) {
         return -1;
     }
     *data_ptr = &cb->buffer[cb->head];
@@ -181,12 +168,12 @@ int circular_buffer_get_write_block(circular_buffer_t *cb, uint8_t **data_ptr, s
     return (*len > 0) ? 0 : -1;
 }
 
-void circular_buffer_advance_write(circular_buffer_t *cb, size_t len)
+void grlc_cb_advance_write(circular_buffer_t *cb, size_t len)
 {
     if (!cb || len == 0) {
         return;
     }
-    size_t free = circular_buffer_free_space(cb);
+    size_t free = grlc_cb_free_space(cb);
     size_t adv = len < free ? len : free;
     cb->head = cb_advance(cb->head, adv, cb->size);
 }

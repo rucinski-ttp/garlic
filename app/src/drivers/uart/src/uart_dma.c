@@ -1,5 +1,5 @@
-#include "drivers/uart_dma/inc/uart_dma.h"
 #include <string.h>
+#include "drivers/uart/inc/uart.h"
 #include "utils/circular_buffer/inc/circular_buffer.h"
 
 #ifndef UART_DMA_TESTING
@@ -25,10 +25,11 @@ static inline void k_sem_init(struct k_sem *s, int a, int b)
     ARG_UNUSED(a);
     ARG_UNUSED(b);
 }
-static inline void k_sem_take(struct k_sem *s, int t)
+static inline int k_sem_take(struct k_sem *s, int t)
 {
     ARG_UNUSED(s);
     ARG_UNUSED(t);
+    return 0;
 }
 static inline void k_sem_give(struct k_sem *s)
 {
@@ -167,6 +168,12 @@ void uart_dma_test_set_hal_callback_set(int (*fn)(
 #endif
 
 /* UART async callback - handles all DMA events */
+/**
+ * @brief UART async event handler (ISR context).
+ *
+ * Handles TX completion/abort and RX ready/buffer events, updates statistics,
+ * maintains double-buffered RX, and restarts RX on errors.
+ */
 static void uart_callback(const struct device *dev, struct uart_event *evt, void *user_data)
 {
     ARG_UNUSED(dev);
@@ -190,8 +197,8 @@ static void uart_callback(const struct device *dev, struct uart_event *evt, void
             LOG_DBG("RX ready: %d bytes at offset %d", evt->data.rx.len, evt->data.rx.offset);
 
             /* Copy received data to circular buffer (non-blocking; ISR context) */
-            size_t written = circular_buffer_write(
-                &rx_buffer, &evt->data.rx.buf[evt->data.rx.offset], evt->data.rx.len);
+            size_t written =
+                grlc_cb_write(&rx_buffer, &evt->data.rx.buf[evt->data.rx.offset], evt->data.rx.len);
 
             if (written < evt->data.rx.len) {
                 stats.rx_overruns++;
@@ -276,7 +283,7 @@ static void uart_callback(const struct device *dev, struct uart_event *evt, void
     }
 }
 
-enum uart_dma_status uart_dma_init(void)
+enum uart_dma_status grlc_uart_init(void)
 {
     int ret;
 
@@ -311,8 +318,8 @@ enum uart_dma_status uart_dma_init(void)
 #endif
 
     /* Initialize circular buffers */
-    circular_buffer_init(&tx_buffer, tx_buffer_storage, UART_DMA_TX_BUFFER_SIZE);
-    circular_buffer_init(&rx_buffer, rx_buffer_storage, UART_DMA_RX_BUFFER_SIZE);
+    grlc_cb_init(&tx_buffer, tx_buffer_storage, UART_DMA_TX_BUFFER_SIZE);
+    grlc_cb_init(&rx_buffer, rx_buffer_storage, UART_DMA_RX_BUFFER_SIZE);
 
     /* Register async callback */
     ret = hal_uart_callback_set(uart_dev, uart_callback, NULL);
@@ -327,175 +334,165 @@ enum uart_dma_status uart_dma_init(void)
     /* Start RX with first buffer; use finite timeout for partial frames */
     ret =
         hal_uart_rx_enable(uart_dev, dma_rx_buf[0], UART_DMA_RX_CHUNK_SIZE, UART_DMA_RX_TIMEOUT_US);
-    if (ret != 0) {
-        LOG_ERR("Failed to enable RX: %d", ret);
-        return UART_DMA_STATUS_ERROR;
+    if (ret == 0) {
+        rx_enabled = true;
+        initialized = true;
+        LOG_INF("UART RX enabled");
+        return UART_DMA_STATUS_OK;
     }
-
-    rx_enabled = true;
-    initialized = true;
-    LOG_INF("UART DMA initialized with double buffering");
-
-    return UART_DMA_STATUS_OK;
+    LOG_ERR("Failed to enable UART RX: %d", ret);
+    return UART_DMA_STATUS_ERROR;
 }
 
-enum uart_dma_status uart_dma_send(const uint8_t *data, size_t len)
+enum uart_dma_status grlc_uart_send(const uint8_t *data, size_t len)
 {
-    if (!initialized) {
-        return UART_DMA_STATUS_NOT_INITIALIZED;
+    enum uart_dma_status rc = UART_DMA_STATUS_OK;
+    if (!initialized || data == NULL || len == 0) {
+        rc = UART_DMA_STATUS_NOT_INITIALIZED;
+    } else {
+        k_sem_take(&tx_sem, K_FOREVER);
+        size_t free_space = grlc_cb_free_space(&tx_buffer);
+        if (free_space < len) {
+            rc = UART_DMA_STATUS_BUFFER_FULL;
+        } else {
+            size_t written = grlc_cb_write(&tx_buffer, data, len);
+            (void)written;
+        }
+        k_sem_give(&tx_sem);
+        if (rc == UART_DMA_STATUS_OK) {
+            /* Kick the TX processing */
+            grlc_uart_process();
+        }
     }
-
-    if (data == NULL || len == 0) {
-        return UART_DMA_STATUS_ERROR;
-    }
-
-    /* Add data to circular buffer with protection */
-    k_sem_take(&tx_sem, K_FOREVER);
-    size_t written = circular_buffer_write(&tx_buffer, data, len);
-    k_sem_give(&tx_sem);
-
-    if (written < len) {
-        stats.tx_overruns++;
-        LOG_WRN("TX buffer full, only wrote %d of %d bytes", written, len);
-        return UART_DMA_STATUS_BUFFER_FULL;
-    }
-
-    /* Trigger transmission if not already in progress */
-    uart_dma_process();
-
-    return UART_DMA_STATUS_OK;
+    return rc;
 }
 
-enum uart_dma_status uart_dma_send_byte(uint8_t byte)
+enum uart_dma_status grlc_uart_send_byte(uint8_t byte)
 {
-    return uart_dma_send(&byte, 1);
+    return grlc_uart_send(&byte, 1) == UART_DMA_STATUS_OK ? UART_DMA_STATUS_OK :
+                                                            UART_DMA_STATUS_BUFFER_FULL;
 }
 
-size_t uart_dma_rx_available(void)
+size_t grlc_uart_rx_available(void)
 {
     if (!initialized) {
         return 0;
     }
 
-    k_sem_take(&rx_sem, K_FOREVER);
-    size_t available = circular_buffer_available(&rx_buffer);
+    if (k_sem_take(&rx_sem, K_NO_WAIT) != 0) {
+        return 0;
+    }
+    size_t available = grlc_cb_available(&rx_buffer);
     k_sem_give(&rx_sem);
 
     return available;
 }
 
-size_t uart_dma_read(uint8_t *data, size_t max_len)
+size_t grlc_uart_read(uint8_t *data, size_t max_len)
 {
-    if (!initialized || data == NULL || max_len == 0) {
-        return 0;
+    size_t nread = 0;
+    if (initialized && data != NULL && max_len != 0) {
+        k_sem_take(&rx_sem, K_FOREVER);
+        nread = grlc_cb_read(&rx_buffer, data, max_len);
+        k_sem_give(&rx_sem);
     }
-
-    k_sem_take(&rx_sem, K_FOREVER);
-    size_t read = circular_buffer_read(&rx_buffer, data, max_len);
-    k_sem_give(&rx_sem);
-
-    return read;
+    return nread;
 }
 
-enum uart_dma_status uart_dma_read_byte(uint8_t *byte)
+enum uart_dma_status grlc_uart_read_byte(uint8_t *byte)
 {
+    enum uart_dma_status st = UART_DMA_STATUS_BUFFER_EMPTY;
     if (!initialized || byte == NULL) {
-        return UART_DMA_STATUS_NOT_INITIALIZED;
+        st = UART_DMA_STATUS_NOT_INITIALIZED;
+    } else {
+        k_sem_take(&rx_sem, K_FOREVER);
+        uint8_t tmp;
+        size_t n = grlc_cb_read(&rx_buffer, &tmp, 1);
+        k_sem_give(&rx_sem);
+        if (n == 1) {
+            *byte = tmp;
+            st = UART_DMA_STATUS_OK;
+        }
     }
-
-    k_sem_take(&rx_sem, K_FOREVER);
-    uint8_t tmp;
-    size_t n = circular_buffer_read(&rx_buffer, &tmp, 1);
-    k_sem_give(&rx_sem);
-    if (n == 1) {
-        *byte = tmp;
-        return UART_DMA_STATUS_OK;
-    }
-    return UART_DMA_STATUS_BUFFER_EMPTY;
+    return st;
 }
 
-size_t uart_dma_tx_free_space(void)
+size_t grlc_uart_tx_free_space(void)
 {
-    if (!initialized) {
-        return 0;
+    size_t free_space = 0;
+    if (initialized) {
+        k_sem_take(&tx_sem, K_FOREVER);
+        free_space = grlc_cb_free_space(&tx_buffer);
+        k_sem_give(&tx_sem);
     }
-
-    k_sem_take(&tx_sem, K_FOREVER);
-    size_t free_space = circular_buffer_free_space(&tx_buffer);
-    k_sem_give(&tx_sem);
-
     return free_space;
 }
 
-bool uart_dma_tx_complete(void)
+bool grlc_uart_tx_complete(void)
 {
-    if (!initialized) {
-        return true;
+    bool complete = true;
+    if (initialized) {
+        k_sem_take(&tx_sem, K_FOREVER);
+        bool empty = grlc_cb_is_empty(&tx_buffer);
+        complete = empty && !tx_in_progress;
+        k_sem_give(&tx_sem);
     }
-
-    k_sem_take(&tx_sem, K_FOREVER);
-    bool empty = circular_buffer_is_empty(&tx_buffer);
-    bool complete = empty && !tx_in_progress;
-    k_sem_give(&tx_sem);
-
     return complete;
 }
 
-void uart_dma_get_statistics(struct uart_statistics *stats_out)
+void grlc_uart_get_statistics(struct uart_statistics *stats_out)
 {
     if (stats_out != NULL) {
         memcpy(stats_out, &stats, sizeof(struct uart_statistics));
     }
 }
 
-void uart_dma_reset_statistics(void)
+void grlc_uart_reset_statistics(void)
 {
     memset(&stats, 0, sizeof(struct uart_statistics));
 }
 
-void uart_dma_clear_rx_buffer(void)
+void grlc_uart_clear_rx_buffer(void)
 {
     if (initialized) {
         k_sem_take(&rx_sem, K_FOREVER);
-        circular_buffer_reset(&rx_buffer);
+        grlc_cb_reset(&rx_buffer);
         k_sem_give(&rx_sem);
     }
 }
 
-void uart_dma_clear_tx_buffer(void)
+void grlc_uart_clear_tx_buffer(void)
 {
     if (initialized) {
         k_sem_take(&tx_sem, K_FOREVER);
-        circular_buffer_reset(&tx_buffer);
+        grlc_cb_reset(&tx_buffer);
         k_sem_give(&tx_sem);
     }
 }
 
-void uart_dma_process(void)
+void grlc_uart_process(void)
 {
-    if (!initialized) {
-        return;
-    }
+    if (initialized) {
+        /* Process TX if not currently transmitting */
+        k_sem_take(&tx_sem, K_NO_WAIT);
+        if (!tx_in_progress && !grlc_cb_is_empty(&tx_buffer)) {
+            /* Read data from circular buffer to DMA buffer */
+            tx_len = grlc_cb_read(&tx_buffer, dma_tx_buf, MIN(UART_DMA_TX_BUFFER_SIZE, 256));
 
-    /* Process TX if not currently transmitting */
-    k_sem_take(&tx_sem, K_NO_WAIT);
-    if (!tx_in_progress && !circular_buffer_is_empty(&tx_buffer)) {
-        /* Read data from circular buffer to DMA buffer */
-        tx_len = circular_buffer_read(&tx_buffer, dma_tx_buf, MIN(UART_DMA_TX_BUFFER_SIZE, 256));
-
-        if (tx_len > 0) {
-            int ret = hal_uart_tx(uart_dev, dma_tx_buf, tx_len, SYS_FOREVER_US);
-            if (ret == 0) {
-                tx_in_progress = true;
-                LOG_DBG("Started TX of %d bytes", tx_len);
-            } else {
-                LOG_ERR("TX failed: %d", ret);
-                /* Put data back in buffer */
-                circular_buffer_write(&tx_buffer, dma_tx_buf, tx_len);
+            if (tx_len > 0) {
+                int ret = hal_uart_tx(uart_dev, dma_tx_buf, tx_len, SYS_FOREVER_US);
+                if (ret == 0) {
+                    tx_in_progress = true;
+                    LOG_DBG("Started TX of %d bytes", tx_len);
+                } else {
+                    LOG_ERR("TX failed: %d", ret);
+                    /* Put data back in buffer */
+                    (void)grlc_cb_write(&tx_buffer, dma_tx_buf, tx_len);
+                }
             }
         }
+        k_sem_give(&tx_sem);
     }
-    k_sem_give(&tx_sem);
 }
 
 #ifdef UART_DMA_TESTING

@@ -7,23 +7,29 @@ static command_status_t uptime_handler(const uint8_t *in, size_t in_len, uint8_t
 {
     (void)in;
     (void)in_len;
+    command_status_t st = CMD_STATUS_OK;
+    size_t produced = 0;
     if (!out || !out_len || *out_len < 8) {
-        return CMD_STATUS_ERR_BOUNDS;
+        st = CMD_STATUS_ERR_BOUNDS;
+    } else {
+        uint64_t ms = grlc_sys_uptime_ms();
+        out[0] = (uint8_t)(ms & 0xFF);
+        out[1] = (uint8_t)((ms >> 8) & 0xFF);
+        out[2] = (uint8_t)((ms >> 16) & 0xFF);
+        out[3] = (uint8_t)((ms >> 24) & 0xFF);
+        out[4] = (uint8_t)((ms >> 32) & 0xFF);
+        out[5] = (uint8_t)((ms >> 40) & 0xFF);
+        out[6] = (uint8_t)((ms >> 48) & 0xFF);
+        out[7] = (uint8_t)((ms >> 56) & 0xFF);
+        produced = 8;
     }
-    uint64_t ms = cmd_sys_uptime_ms();
-    out[0] = (uint8_t)(ms & 0xFF);
-    out[1] = (uint8_t)((ms >> 8) & 0xFF);
-    out[2] = (uint8_t)((ms >> 16) & 0xFF);
-    out[3] = (uint8_t)((ms >> 24) & 0xFF);
-    out[4] = (uint8_t)((ms >> 32) & 0xFF);
-    out[5] = (uint8_t)((ms >> 40) & 0xFF);
-    out[6] = (uint8_t)((ms >> 48) & 0xFF);
-    out[7] = (uint8_t)((ms >> 56) & 0xFF);
-    *out_len = 8;
-    return CMD_STATUS_OK;
+    if (out_len) {
+        *out_len = produced;
+    }
+    return st;
 }
 
-void command_register_uptime(void)
+void grlc_cmd_register_uptime(void)
 {
-    (void)command_register(CMD_ID_GET_UPTIME, uptime_handler);
+    (void)grlc_cmd_register(CMD_ID_GET_UPTIME, uptime_handler);
 }

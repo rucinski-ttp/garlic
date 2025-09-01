@@ -127,13 +127,51 @@ class TransportCodec:
         return messages
 
     def request(self, ser, session: int, payload: bytes, timeout: float = 1.0):
-        ser.write(self.encode_message(session, payload, is_response=False))
-        deadline = time.time() + timeout
-        while time.time() < deadline:
-            data = ser.read(ser.serial.in_waiting or 1)
-            if data:
-                for sess, msg, is_resp in self.feed(data):
-                    if is_resp and sess == session:
-                        return msg
-        raise TimeoutError('No response message')
+        """Send a request and wait for a matching response.
 
+        To reduce flakiness on some serial stacks, this drains any stale
+        input before sending and retries once on timeout.
+        """
+
+        def _attempt(deadline: float) -> bytes | None:
+            # Drain stale input to avoid parser confusion from prior frames
+            try:
+                if hasattr(ser, 'flush_input'):
+                    ser.flush_input()
+                else:
+                    # Fallback: best-effort drain using in_waiting
+                    n = getattr(ser.serial, 'in_waiting', 0)
+                    if n:
+                        _ = ser.read(n)
+            except Exception:
+                pass
+
+            # Send the encoded request
+            ser.write(self.encode_message(session, payload, is_response=False))
+
+            # Read until deadline, feeding parser incrementally
+            while time.time() < deadline:
+                # Read whatever is available; ensure progress with at least 1 byte
+                try:
+                    to_read = getattr(ser.serial, 'in_waiting', 0) or 1
+                except Exception:
+                    to_read = 1
+                data = ser.read(to_read)
+                if data:
+                    for sess, msg, is_resp in self.feed(data):
+                        if is_resp and sess == session:
+                            return msg
+            return None
+
+        # First attempt
+        deadline = time.time() + timeout
+        msg = _attempt(deadline)
+        if msg is not None:
+            return msg
+
+        # One retry with a shorter extension window
+        retry_deadline = time.time() + max(0.3, min(1.0, timeout * 0.5))
+        msg = _attempt(retry_deadline)
+        if msg is not None:
+            return msg
+        raise TimeoutError('No response message')

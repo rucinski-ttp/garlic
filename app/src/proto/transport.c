@@ -1,4 +1,9 @@
 #include "proto/inc/transport.h"
+#ifdef __ZEPHYR__
+#include <zephyr/kernel.h>
+#include <zephyr/logging/log.h>
+LOG_MODULE_REGISTER(transport_tx, LOG_LEVEL_INF);
+#endif
 #include <string.h>
 #include "proto/inc/crc32.h"
 
@@ -32,8 +37,8 @@ static void reset_parse(struct transport_ctx *t)
     t->rx_need = 0;
 }
 
-void transport_init(struct transport_ctx *t, const struct transport_lower_if *lower,
-                    transport_msg_cb on_msg, void *user)
+void grlc_transport_init(struct transport_ctx *t, const struct transport_lower_if *lower,
+                         transport_msg_cb on_msg, void *user)
 {
     memset(t, 0, sizeof(*t));
     t->lower = lower;
@@ -42,16 +47,22 @@ void transport_init(struct transport_ctx *t, const struct transport_lower_if *lo
     reset_parse(t);
 }
 
-void transport_reset(struct transport_ctx *t)
+void grlc_transport_reset(struct transport_ctx *t)
 {
     reset_parse(t);
     t->re_in_progress = false;
     t->re_len = 0;
     t->re_frag_index = 0;
     t->re_frag_count = 0;
+    /* reset TX */
+    t->tx_in_progress = false;
+    t->tx_msg_ptr = NULL;
+    t->tx_msg_len = 0;
+    t->tx_frame_len = 0;
+    t->tx_frame_pos = 0;
 }
 
-void transport_get_stats(const struct transport_ctx *t, struct transport_stats *out)
+void grlc_transport_get_stats(const struct transport_ctx *t, struct transport_stats *out)
 {
     if (out) {
         *out = t->stats;
@@ -146,7 +157,7 @@ static void handle_frame(struct transport_ctx *t, const uint8_t *hdr, const uint
     deliver_if_complete(t, session, flags);
 }
 
-void transport_rx_bytes(struct transport_ctx *t, const uint8_t *data, size_t len)
+void grlc_transport_rx_bytes(struct transport_ctx *t, const uint8_t *data, size_t len)
 {
     for (size_t i = 0; i < len; ++i) {
         uint8_t b = data[i];
@@ -215,69 +226,137 @@ void transport_rx_bytes(struct transport_ctx *t, const uint8_t *data, size_t len
     }
 }
 
-bool transport_send_message(struct transport_ctx *t, uint16_t session, const uint8_t *msg,
-                            size_t len, bool is_response)
+bool grlc_transport_send_message(struct transport_ctx *t, uint16_t session, const uint8_t *msg,
+                                 size_t len, bool is_response)
 {
-    if (!t || !t->lower || !t->lower->write) {
-        return false;
+    bool accepted = false;
+    if (t && t->lower && t->lower->write && (msg || len == 0) && !t->tx_in_progress &&
+        len <= TRANSPORT_REASSEMBLY_MAX) {
+        size_t maxp = TRANSPORT_FRAME_MAX_PAYLOAD;
+        uint16_t frag_count = (uint16_t)((len + maxp - 1) / maxp);
+        if (frag_count == 0) {
+            frag_count = 1;
+        }
+        if (len > 0) {
+            memcpy(t->tx_msg_copy, msg, len);
+        }
+        t->tx_msg_copy_len = len;
+        /* Initialize TX state */
+        t->tx_msg_ptr = (len > 0) ? t->tx_msg_copy : NULL;
+        t->tx_msg_len = t->tx_msg_copy_len;
+        t->tx_session = session;
+        t->tx_is_resp = is_response;
+        t->tx_frag_index = 0;
+        t->tx_frag_count = frag_count;
+        t->tx_in_progress = true;
+        t->tx_frame_pos = 0;
+        t->tx_frame_len = 0;
+        /* Try to pump immediately (non-blocking). */
+        grlc_transport_tx_pump(t);
+        accepted = true;
     }
-    if (!msg && len) {
-        return false;
-    }
-    // fragment
+    return accepted;
+}
+
+static void assemble_next_frame(struct transport_ctx *t)
+{
     size_t maxp = TRANSPORT_FRAME_MAX_PAYLOAD;
-    uint16_t frag_count = (uint16_t)((len + maxp - 1) / maxp);
-    if (frag_count == 0) {
-        frag_count = 1;
+    size_t remaining = t->tx_msg_len;
+    size_t take = remaining < maxp ? remaining : maxp;
+    uint8_t flags = 0;
+    if (t->tx_frag_index == 0) {
+        flags |= TRANSPORT_FLAG_START;
     }
-    uint16_t frag_index = 0;
-
-    size_t offset = 0;
-    while (frag_index < frag_count) {
-        size_t remaining = len - offset;
-        size_t take = remaining < maxp ? remaining : maxp;
-        uint8_t flags = 0;
-        if (frag_index == 0) {
-            flags |= TRANSPORT_FLAG_START;
-        }
-        if (frag_index == (uint16_t)(frag_count - 1)) {
-            flags |= TRANSPORT_FLAG_END;
-        } else {
-            flags |= TRANSPORT_FLAG_MIDDLE;
-        }
-        if (is_response) {
-            flags |= TRANSPORT_FLAG_RESP;
-        }
-
-        uint8_t buf[2 + HDR_LEN + TRANSPORT_FRAME_MAX_PAYLOAD + 4];
-        size_t pos = 0;
-        buf[pos++] = SYNC0;
-        buf[pos++] = SYNC1;
-        buf[pos++] = (uint8_t)TRANSPORT_VERSION;
-        buf[pos++] = flags;
-        wr16(&buf[pos], session);
-        pos += 2;
-        wr16(&buf[pos], frag_index);
-        pos += 2;
-        wr16(&buf[pos], frag_count);
-        pos += 2;
-        wr16(&buf[pos], (uint16_t)take);
-        pos += 2;
-        if (take > 0) {
-            memcpy(&buf[pos], &msg[offset], take);
-        }
-        pos += take;
-        // CRC over [ver..payload]
-        uint32_t crc = crc32_ieee(&buf[2], HDR_LEN + take);
-        wr32(&buf[pos], crc);
-        pos += 4;
-
-        size_t written = t->lower->write(buf, pos);
-        (void)written; // assume full write for now
-
-        offset += take;
-        frag_index++;
+    if (t->tx_frag_index == (uint16_t)(t->tx_frag_count - 1)) {
+        flags |= TRANSPORT_FLAG_END;
+    } else {
+        flags |= TRANSPORT_FLAG_MIDDLE;
+    }
+    if (t->tx_is_resp) {
+        flags |= TRANSPORT_FLAG_RESP;
     }
 
-    return true;
+    size_t pos = 0;
+    t->tx_frame_buf[pos++] = SYNC0;
+    t->tx_frame_buf[pos++] = SYNC1;
+    t->tx_frame_buf[pos++] = (uint8_t)TRANSPORT_VERSION;
+    t->tx_frame_buf[pos++] = flags;
+    wr16(&t->tx_frame_buf[pos], t->tx_session);
+    pos += 2;
+    wr16(&t->tx_frame_buf[pos], t->tx_frag_index);
+    pos += 2;
+    wr16(&t->tx_frame_buf[pos], t->tx_frag_count);
+    pos += 2;
+    wr16(&t->tx_frame_buf[pos], (uint16_t)take);
+    pos += 2;
+    if (take > 0 && t->tx_msg_ptr) {
+        memcpy(&t->tx_frame_buf[pos], t->tx_msg_ptr, take);
+    }
+    pos += take;
+    uint32_t crc = crc32_ieee(&t->tx_frame_buf[2], HDR_LEN + take);
+    wr32(&t->tx_frame_buf[pos], crc);
+    pos += 4;
+    t->tx_frame_len = pos;
+    t->tx_frame_pos = 0;
+    t->tx_frame_payload_len = (uint16_t)take;
+#ifdef __ZEPHYR__
+    LOG_INF("tx asm: sess=%u idx=%u/%u pay=%u bytes", (unsigned)t->tx_session,
+            (unsigned)t->tx_frag_index, (unsigned)t->tx_frag_count,
+            (unsigned)t->tx_frame_payload_len);
+#endif
+}
+
+void grlc_transport_tx_pump(struct transport_ctx *t)
+{
+    if (!t || !t->tx_in_progress || !t->lower || !t->lower->write) {
+        return;
+    }
+    /* Keep assembling and writing frames until lower layer stalls or message completes. */
+    while (t->tx_in_progress) {
+        /* If no current frame assembled, assemble it */
+        if (t->tx_frame_pos == 0 && t->tx_frame_len == 0) {
+            assemble_next_frame(t);
+        }
+
+        /* Write as much as the lower layer accepts, non-blocking */
+        while (t->tx_frame_pos < t->tx_frame_len) {
+            size_t w = t->lower->write(&t->tx_frame_buf[t->tx_frame_pos],
+                                       t->tx_frame_len - t->tx_frame_pos);
+            if (w == 0) {
+                /* No space right now; try again on next tick */
+#ifdef __ZEPHYR__
+                LOG_INF("tx stall: pos=%u len=%u", (unsigned)t->tx_frame_pos,
+                        (unsigned)t->tx_frame_len);
+#endif
+                /* Stall: exit pump; caller will invoke again later. */
+                return;
+            }
+            t->tx_frame_pos += w;
+        }
+
+        /* Frame complete */
+        t->tx_frag_index++;
+        if (t->tx_frame_payload_len > 0) {
+            if (t->tx_msg_len >= t->tx_frame_payload_len) {
+                t->tx_msg_len -= t->tx_frame_payload_len;
+                if (t->tx_msg_ptr) {
+                    t->tx_msg_ptr += t->tx_frame_payload_len;
+                }
+            } else {
+                t->tx_msg_len = 0; /* safety */
+            }
+        }
+
+        if (t->tx_frag_index >= t->tx_frag_count) {
+            /* Message complete */
+            t->tx_in_progress = false;
+            t->tx_frame_len = 0;
+            t->tx_frame_pos = 0;
+            break;
+        }
+
+        /* Prepare to assemble next frame and loop */
+        t->tx_frame_len = 0;
+        t->tx_frame_pos = 0;
+    }
 }

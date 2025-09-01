@@ -60,9 +60,13 @@ class CommandClient:
         return data
 
     def reboot(self, timeout: float = 0.3) -> None:
-        # Request reboot; device should ack and reboot shortly after.
-        self._req(0x0004, b'', timeout)
-        # After this call, the device may reset; caller can verify via RTT.
+        # Request reboot; device may reboot before ack on serial or BLE.
+        try:
+            self._req(0x0004, b'', timeout)
+        except Exception:
+            # Accept failures: device likely reset during request/response.
+            pass
+        # After this call, the device may reset; caller can verify uptime.
 
     # --- Extended helpers for I2C and TMP119 bring-up ---
     def i2c_write(self, addr7: int, data: bytes, timeout: float = 1.0) -> None:

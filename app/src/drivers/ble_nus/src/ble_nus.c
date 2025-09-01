@@ -79,7 +79,7 @@ static int adv_start(void)
     return rc;
 }
 
-int ble_nus_init(ble_nus_rx_cb_t rx_cb, void *user)
+int grlc_ble_init(ble_nus_rx_cb_t rx_cb, void *user)
 {
     s_rx_cb = rx_cb;
     s_rx_user = user;
@@ -107,7 +107,7 @@ int ble_nus_init(ble_nus_rx_cb_t rx_cb, void *user)
     return 0;
 }
 
-size_t ble_nus_send(const uint8_t *data, size_t len)
+size_t grlc_ble_send(const uint8_t *data, size_t len)
 {
     if (!s_conn || !data || !len) {
         return 0;
@@ -127,7 +127,7 @@ size_t ble_nus_send(const uint8_t *data, size_t len)
     return off;
 }
 
-int ble_nus_set_advertising(bool enable)
+int grlc_ble_set_advertising(bool enable)
 {
     if (enable) {
         if (s_adv_on) {
@@ -146,7 +146,7 @@ int ble_nus_set_advertising(bool enable)
     }
 }
 
-void ble_nus_get_status(bool *advertising, bool *connected)
+void grlc_ble_get_status(bool *advertising, bool *connected)
 {
     if (advertising)
         *advertising = s_adv_on;
@@ -154,7 +154,7 @@ void ble_nus_get_status(bool *advertising, bool *connected)
         *connected = (s_conn != NULL);
 }
 
-uint8_t ble_nus_last_disc_reason(void)
+uint8_t grlc_ble_last_disc_reason(void)
 {
     return s_last_disc_reason;
 }
