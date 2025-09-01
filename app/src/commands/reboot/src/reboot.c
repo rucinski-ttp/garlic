@@ -11,8 +11,8 @@ static void do_reboot(struct k_work *work)
     sys_reboot(SYS_REBOOT_COLD);
 }
 
-static command_status_t reboot_handler(const uint8_t *in, size_t in_len, uint8_t *out,
-                                       size_t *out_len)
+static command_status_t
+reboot_handler(const uint8_t *in, size_t in_len, uint8_t *out, size_t *out_len)
 {
     (void)in;
     (void)in_len;

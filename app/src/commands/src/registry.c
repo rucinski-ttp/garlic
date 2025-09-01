@@ -41,13 +41,18 @@ bool grlc_cmd_register(uint16_t cmd_id, command_handler_fn handler)
     return ok;
 }
 
-bool grlc_cmd_dispatch(uint16_t cmd_id, const uint8_t *in, size_t in_len, uint8_t *out,
-                       size_t *out_len, uint16_t *status_out)
+bool grlc_cmd_dispatch(uint16_t cmd_id,
+                       const uint8_t *in,
+                       size_t in_len,
+                       uint8_t *out,
+                       size_t *out_len,
+                       uint16_t *status_out)
 {
     for (size_t i = 0; i < reg_count; ++i) {
         if (reg_tbl[i].cmd_id == cmd_id) {
             size_t cap = out_len ? *out_len : 0;
-            command_status_t st = reg_tbl[i].fn(in, in_len, out, out_len ? out_len : &cap);
+            command_status_t st =
+                reg_tbl[i].fn(in, in_len, out, out_len ? out_len : &cap);
             if (status_out) {
                 *status_out = (uint16_t)st;
             }
@@ -60,8 +65,12 @@ bool grlc_cmd_dispatch(uint16_t cmd_id, const uint8_t *in, size_t in_len, uint8_
     return false;
 }
 
-bool grlc_cmd_pack_request(uint16_t cmd_id, const uint8_t *payload, uint16_t payload_len,
-                           uint8_t *out_buf, size_t out_cap, size_t *out_len)
+bool grlc_cmd_pack_request(uint16_t cmd_id,
+                           const uint8_t *payload,
+                           uint16_t payload_len,
+                           uint8_t *out_buf,
+                           size_t out_cap,
+                           size_t *out_len)
 {
     bool ok = true;
     size_t need = 2 + 2 + payload_len;
@@ -83,8 +92,11 @@ bool grlc_cmd_pack_request(uint16_t cmd_id, const uint8_t *payload, uint16_t pay
     return ok;
 }
 
-bool grlc_cmd_parse_request(const uint8_t *in, size_t in_len, uint16_t *cmd_id_out,
-                            const uint8_t **payload, uint16_t *payload_len)
+bool grlc_cmd_parse_request(const uint8_t *in,
+                            size_t in_len,
+                            uint16_t *cmd_id_out,
+                            const uint8_t **payload,
+                            uint16_t *payload_len)
 {
     bool ok = true;
     if (!in || in_len < 4) {
@@ -113,8 +125,13 @@ bool grlc_cmd_parse_request(const uint8_t *in, size_t in_len, uint16_t *cmd_id_o
     return ok;
 }
 
-bool grlc_cmd_pack_response(uint16_t cmd_id, uint16_t status, const uint8_t *payload,
-                            uint16_t payload_len, uint8_t *out_buf, size_t out_cap, size_t *out_len)
+bool grlc_cmd_pack_response(uint16_t cmd_id,
+                            uint16_t status,
+                            const uint8_t *payload,
+                            uint16_t payload_len,
+                            uint8_t *out_buf,
+                            size_t out_cap,
+                            size_t *out_len)
 {
     bool ok = true;
     size_t need = 2 + 2 + 2 + payload_len;
@@ -138,8 +155,12 @@ bool grlc_cmd_pack_response(uint16_t cmd_id, uint16_t status, const uint8_t *pay
     return ok;
 }
 
-bool grlc_cmd_parse_response(const uint8_t *in, size_t in_len, uint16_t *cmd_id_out,
-                             uint16_t *status_out, const uint8_t **payload, uint16_t *payload_len)
+bool grlc_cmd_parse_response(const uint8_t *in,
+                             size_t in_len,
+                             uint16_t *cmd_id_out,
+                             uint16_t *status_out,
+                             const uint8_t **payload,
+                             uint16_t *payload_len)
 {
     bool ok = true;
     if (!in || in_len < 6) {

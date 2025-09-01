@@ -10,7 +10,8 @@ LOG_MODULE_REGISTER(transport_tx, LOG_LEVEL_INF);
 #define SYNC0 0xA5
 #define SYNC1 0x5A
 
-// Header (excluding sync): ver(1) flags(1) session(2) frag_index(2) frag_count(2) payload_len(2)
+// Header (excluding sync): ver(1) flags(1) session(2) frag_index(2)
+// frag_count(2) payload_len(2)
 #define HDR_LEN 10
 
 static uint16_t rd16(const uint8_t *p)
@@ -37,8 +38,10 @@ static void reset_parse(struct transport_ctx *t)
     t->rx_need = 0;
 }
 
-void grlc_transport_init(struct transport_ctx *t, const struct transport_lower_if *lower,
-                         transport_msg_cb on_msg, void *user)
+void grlc_transport_init(struct transport_ctx *t,
+                         const struct transport_lower_if *lower,
+                         transport_msg_cb on_msg,
+                         void *user)
 {
     memset(t, 0, sizeof(*t));
     t->lower = lower;
@@ -62,7 +65,8 @@ void grlc_transport_reset(struct transport_ctx *t)
     t->tx_frame_pos = 0;
 }
 
-void grlc_transport_get_stats(const struct transport_ctx *t, struct transport_stats *out)
+void grlc_transport_get_stats(const struct transport_ctx *t,
+                              struct transport_stats *out)
 {
     if (out) {
         *out = t->stats;
@@ -77,7 +81,8 @@ static void reassembly_reset(struct transport_ctx *t)
     t->re_frag_count = 0;
 }
 
-static void deliver_if_complete(struct transport_ctx *t, uint16_t session, uint8_t flags)
+static void
+deliver_if_complete(struct transport_ctx *t, uint16_t session, uint8_t flags)
 {
     if (!(flags & TRANSPORT_FLAG_END)) {
         return;
@@ -90,7 +95,9 @@ static void deliver_if_complete(struct transport_ctx *t, uint16_t session, uint8
     reassembly_reset(t);
 }
 
-static void handle_frame(struct transport_ctx *t, const uint8_t *hdr, const uint8_t *payload)
+static void handle_frame(struct transport_ctx *t,
+                         const uint8_t *hdr,
+                         const uint8_t *payload)
 {
     uint8_t ver = hdr[0];
     uint8_t flags = hdr[1];
@@ -127,7 +134,8 @@ static void handle_frame(struct transport_ctx *t, const uint8_t *hdr, const uint
         t->re_is_resp = is_resp;
     } else {
         // must match in-progress session and ordering
-        if (!t->re_in_progress || session != t->re_session || frag_index != t->re_frag_index) {
+        if (!t->re_in_progress || session != t->re_session ||
+            frag_index != t->re_frag_index) {
             t->stats.messages_dropped++;
             reassembly_reset(t);
             return;
@@ -157,7 +165,9 @@ static void handle_frame(struct transport_ctx *t, const uint8_t *hdr, const uint
     deliver_if_complete(t, session, flags);
 }
 
-void grlc_transport_rx_bytes(struct transport_ctx *t, const uint8_t *data, size_t len)
+void grlc_transport_rx_bytes(struct transport_ctx *t,
+                             const uint8_t *data,
+                             size_t len)
 {
     for (size_t i = 0; i < len; ++i) {
         uint8_t b = data[i];
@@ -209,9 +219,12 @@ void grlc_transport_rx_bytes(struct transport_ctx *t, const uint8_t *data, size_
                     uint8_t tmp[HDR_LEN + TRANSPORT_FRAME_MAX_PAYLOAD];
                     memcpy(tmp, t->rx_hdr, HDR_LEN);
                     memcpy(tmp + HDR_LEN, t->rx_payload, rd16(&t->rx_hdr[8]));
-                    uint32_t calc = crc32_ieee(tmp, HDR_LEN + rd16(&t->rx_hdr[8]));
-                    uint32_t got = (uint32_t)t->rx_crc[0] | ((uint32_t)t->rx_crc[1] << 8) |
-                                   ((uint32_t)t->rx_crc[2] << 16) | ((uint32_t)t->rx_crc[3] << 24);
+                    uint32_t calc =
+                        crc32_ieee(tmp, HDR_LEN + rd16(&t->rx_hdr[8]));
+                    uint32_t got = (uint32_t)t->rx_crc[0] |
+                                   ((uint32_t)t->rx_crc[1] << 8) |
+                                   ((uint32_t)t->rx_crc[2] << 16) |
+                                   ((uint32_t)t->rx_crc[3] << 24);
                     if (calc == got) {
                         t->stats.frames_ok++;
                         handle_frame(t, t->rx_hdr, t->rx_payload);
@@ -226,12 +239,15 @@ void grlc_transport_rx_bytes(struct transport_ctx *t, const uint8_t *data, size_
     }
 }
 
-bool grlc_transport_send_message(struct transport_ctx *t, uint16_t session, const uint8_t *msg,
-                                 size_t len, bool is_response)
+bool grlc_transport_send_message(struct transport_ctx *t,
+                                 uint16_t session,
+                                 const uint8_t *msg,
+                                 size_t len,
+                                 bool is_response)
 {
     bool accepted = false;
-    if (t && t->lower && t->lower->write && (msg || len == 0) && !t->tx_in_progress &&
-        len <= TRANSPORT_REASSEMBLY_MAX) {
+    if (t && t->lower && t->lower->write && (msg || len == 0) &&
+        !t->tx_in_progress && len <= TRANSPORT_REASSEMBLY_MAX) {
         size_t maxp = TRANSPORT_FRAME_MAX_PAYLOAD;
         uint16_t frag_count = (uint16_t)((len + maxp - 1) / maxp);
         if (frag_count == 0) {
@@ -300,8 +316,10 @@ static void assemble_next_frame(struct transport_ctx *t)
     t->tx_frame_pos = 0;
     t->tx_frame_payload_len = (uint16_t)take;
 #ifdef __ZEPHYR__
-    LOG_INF("tx asm: sess=%u idx=%u/%u pay=%u bytes", (unsigned)t->tx_session,
-            (unsigned)t->tx_frag_index, (unsigned)t->tx_frag_count,
+    LOG_INF("tx asm: sess=%u idx=%u/%u pay=%u bytes",
+            (unsigned)t->tx_session,
+            (unsigned)t->tx_frag_index,
+            (unsigned)t->tx_frag_count,
             (unsigned)t->tx_frame_payload_len);
 #endif
 }
@@ -311,7 +329,8 @@ void grlc_transport_tx_pump(struct transport_ctx *t)
     if (!t || !t->tx_in_progress || !t->lower || !t->lower->write) {
         return;
     }
-    /* Keep assembling and writing frames until lower layer stalls or message completes. */
+    /* Keep assembling and writing frames until lower layer stalls or message
+     * completes. */
     while (t->tx_in_progress) {
         /* If no current frame assembled, assemble it */
         if (t->tx_frame_pos == 0 && t->tx_frame_len == 0) {
@@ -325,7 +344,8 @@ void grlc_transport_tx_pump(struct transport_ctx *t)
             if (w == 0) {
                 /* No space right now; try again on next tick */
 #ifdef __ZEPHYR__
-                LOG_INF("tx stall: pos=%u len=%u", (unsigned)t->tx_frame_pos,
+                LOG_INF("tx stall: pos=%u len=%u",
+                        (unsigned)t->tx_frame_pos,
                         (unsigned)t->tx_frame_len);
 #endif
                 /* Stall: exit pump; caller will invoke again later. */

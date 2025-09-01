@@ -36,11 +36,11 @@ void project_fatal(const char *msg);
  * @param cond Condition expected to be true.
  * @param msg Message to print if condition is false.
  */
-#define PROJECT_ASSERT(cond, msg)                                                                  \
-    do {                                                                                           \
-        if (!(cond)) {                                                                             \
-            grlc_assert_fatal(msg);                                                                \
-        }                                                                                          \
+#define PROJECT_ASSERT(cond, msg)                                              \
+    do {                                                                       \
+        if (!(cond)) {                                                         \
+            grlc_assert_fatal(msg);                                            \
+        }                                                                      \
     } while (0)
 
 #ifdef __cplusplus

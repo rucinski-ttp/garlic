@@ -2,8 +2,8 @@
 #include "commands/inc/ids.h"
 #include "commands/inc/system_iface.h"
 
-static command_status_t uptime_handler(const uint8_t *in, size_t in_len, uint8_t *out,
-                                       size_t *out_len)
+static command_status_t
+uptime_handler(const uint8_t *in, size_t in_len, uint8_t *out, size_t *out_len)
 {
     (void)in;
     (void)in_len;

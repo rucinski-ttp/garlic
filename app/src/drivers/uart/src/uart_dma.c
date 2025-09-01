@@ -133,11 +133,21 @@ static struct k_sem rx_sem;
 #define hal_device_is_ready   device_is_ready
 #define hal_DEVICE_DT_GET(x)  DEVICE_DT_GET(x)
 #else
-static int (*hal_uart_rx_buf_rsp)(const struct device *, uint8_t *, size_t) = NULL;
-static int (*hal_uart_rx_enable)(const struct device *, uint8_t *, size_t, uint32_t) = NULL;
-static int (*hal_uart_tx)(const struct device *, const uint8_t *, size_t, uint32_t) = NULL;
+static int (*hal_uart_rx_buf_rsp)(const struct device *,
+                                  uint8_t *,
+                                  size_t) = NULL;
+static int (*hal_uart_rx_enable)(const struct device *,
+                                 uint8_t *,
+                                 size_t,
+                                 uint32_t) = NULL;
+static int (*hal_uart_tx)(const struct device *,
+                          const uint8_t *,
+                          size_t,
+                          uint32_t) = NULL;
 static int (*hal_uart_callback_set)(const struct device *,
-                                    void (*)(const struct device *, struct uart_event *, void *),
+                                    void (*)(const struct device *,
+                                             struct uart_event *,
+                                             void *),
                                     void *) = NULL;
 static int hal_device_is_ready(const struct device *d)
 {
@@ -148,20 +158,26 @@ static int hal_device_is_ready(const struct device *d)
 static struct device uart_dev_stub;
 
 /* Test helpers to inject HAL */
-void uart_dma_test_set_hal_rx_buf_rsp(int (*fn)(const struct device *, uint8_t *, size_t))
+void uart_dma_test_set_hal_rx_buf_rsp(int (*fn)(const struct device *,
+                                                uint8_t *,
+                                                size_t))
 {
     hal_uart_rx_buf_rsp = fn;
 }
-void uart_dma_test_set_hal_rx_enable(int (*fn)(const struct device *, uint8_t *, size_t, uint32_t))
+void uart_dma_test_set_hal_rx_enable(
+    int (*fn)(const struct device *, uint8_t *, size_t, uint32_t))
 {
     hal_uart_rx_enable = fn;
 }
-void uart_dma_test_set_hal_tx(int (*fn)(const struct device *, const uint8_t *, size_t, uint32_t))
+void uart_dma_test_set_hal_tx(
+    int (*fn)(const struct device *, const uint8_t *, size_t, uint32_t))
 {
     hal_uart_tx = fn;
 }
-void uart_dma_test_set_hal_callback_set(int (*fn)(
-    const struct device *, void (*)(const struct device *, struct uart_event *, void *), void *))
+void uart_dma_test_set_hal_callback_set(
+    int (*fn)(const struct device *,
+              void (*)(const struct device *, struct uart_event *, void *),
+              void *))
 {
     hal_uart_callback_set = fn;
 }
@@ -174,7 +190,8 @@ void uart_dma_test_set_hal_callback_set(int (*fn)(
  * Handles TX completion/abort and RX ready/buffer events, updates statistics,
  * maintains double-buffered RX, and restarts RX on errors.
  */
-static void uart_callback(const struct device *dev, struct uart_event *evt, void *user_data)
+static void
+uart_callback(const struct device *dev, struct uart_event *evt, void *user_data)
 {
     ARG_UNUSED(dev);
     ARG_UNUSED(user_data);
@@ -194,15 +211,21 @@ static void uart_callback(const struct device *dev, struct uart_event *evt, void
             break;
 
         case UART_RX_RDY:
-            LOG_DBG("RX ready: %d bytes at offset %d", evt->data.rx.len, evt->data.rx.offset);
+            LOG_DBG("RX ready: %d bytes at offset %d",
+                    evt->data.rx.len,
+                    evt->data.rx.offset);
 
-            /* Copy received data to circular buffer (non-blocking; ISR context) */
+            /* Copy received data to circular buffer (non-blocking; ISR context)
+             */
             size_t written =
-                grlc_cb_write(&rx_buffer, &evt->data.rx.buf[evt->data.rx.offset], evt->data.rx.len);
+                grlc_cb_write(&rx_buffer,
+                              &evt->data.rx.buf[evt->data.rx.offset],
+                              evt->data.rx.len);
 
             if (written < evt->data.rx.len) {
                 stats.rx_overruns++;
-                LOG_WRN("RX buffer overflow, lost %d bytes", evt->data.rx.len - written);
+                LOG_WRN("RX buffer overflow, lost %d bytes",
+                        evt->data.rx.len - written);
             }
             stats.rx_bytes += written;
             break;
@@ -233,7 +256,9 @@ static void uart_callback(const struct device *dev, struct uart_event *evt, void
             if (initialized) {
                 /* Restart RX with buffer 0 and set next to 1 */
                 rx_buf_idx = 1;
-                int ret = hal_uart_rx_enable(dev, dma_rx_buf[0], UART_DMA_RX_CHUNK_SIZE,
+                int ret = hal_uart_rx_enable(dev,
+                                             dma_rx_buf[0],
+                                             UART_DMA_RX_CHUNK_SIZE,
                                              UART_DMA_RX_TIMEOUT_US);
                 if (ret == 0) {
                     rx_enabled = true;
@@ -266,7 +291,9 @@ static void uart_callback(const struct device *dev, struct uart_event *evt, void
             /* Attempt to restart RX */
             if (initialized) {
                 rx_buf_idx = 1;
-                int ret = hal_uart_rx_enable(dev, dma_rx_buf[0], UART_DMA_RX_CHUNK_SIZE,
+                int ret = hal_uart_rx_enable(dev,
+                                             dma_rx_buf[0],
+                                             UART_DMA_RX_CHUNK_SIZE,
                                              UART_DMA_RX_TIMEOUT_US);
                 if (ret == 0) {
                     rx_enabled = true;
@@ -312,8 +339,10 @@ enum uart_dma_status grlc_uart_init(void)
 
     ret = uart_configure(uart_dev, &cfg);
     if (ret != 0) {
-        /* Some drivers may not support runtime configure; proceed with DT config */
-        LOG_WRN("UART runtime configuration failed: %d, using DT defaults", ret);
+        /* Some drivers may not support runtime configure; proceed with DT
+         * config */
+        LOG_WRN("UART runtime configuration failed: %d, using DT defaults",
+                ret);
     }
 #endif
 
@@ -332,8 +361,10 @@ enum uart_dma_status grlc_uart_init(void)
     rx_buf_idx = 1; /* enable with buf[0], next provided will be buf[1] */
 
     /* Start RX with first buffer; use finite timeout for partial frames */
-    ret =
-        hal_uart_rx_enable(uart_dev, dma_rx_buf[0], UART_DMA_RX_CHUNK_SIZE, UART_DMA_RX_TIMEOUT_US);
+    ret = hal_uart_rx_enable(uart_dev,
+                             dma_rx_buf[0],
+                             UART_DMA_RX_CHUNK_SIZE,
+                             UART_DMA_RX_TIMEOUT_US);
     if (ret == 0) {
         rx_enabled = true;
         initialized = true;
@@ -369,8 +400,9 @@ enum uart_dma_status grlc_uart_send(const uint8_t *data, size_t len)
 
 enum uart_dma_status grlc_uart_send_byte(uint8_t byte)
 {
-    return grlc_uart_send(&byte, 1) == UART_DMA_STATUS_OK ? UART_DMA_STATUS_OK :
-                                                            UART_DMA_STATUS_BUFFER_FULL;
+    return grlc_uart_send(&byte, 1) == UART_DMA_STATUS_OK ?
+               UART_DMA_STATUS_OK :
+               UART_DMA_STATUS_BUFFER_FULL;
 }
 
 size_t grlc_uart_rx_available(void)
@@ -477,10 +509,12 @@ void grlc_uart_process(void)
         k_sem_take(&tx_sem, K_NO_WAIT);
         if (!tx_in_progress && !grlc_cb_is_empty(&tx_buffer)) {
             /* Read data from circular buffer to DMA buffer */
-            tx_len = grlc_cb_read(&tx_buffer, dma_tx_buf, MIN(UART_DMA_TX_BUFFER_SIZE, 256));
+            tx_len = grlc_cb_read(
+                &tx_buffer, dma_tx_buf, MIN(UART_DMA_TX_BUFFER_SIZE, 256));
 
             if (tx_len > 0) {
-                int ret = hal_uart_tx(uart_dev, dma_tx_buf, tx_len, SYS_FOREVER_US);
+                int ret =
+                    hal_uart_tx(uart_dev, dma_tx_buf, tx_len, SYS_FOREVER_US);
                 if (ret == 0) {
                     tx_in_progress = true;
                     LOG_DBG("Started TX of %d bytes", tx_len);
@@ -509,6 +543,7 @@ void uart_dma_test_reset(void)
 
 void uart_dma_test_invoke_event(struct uart_event *evt)
 {
-    uart_callback(uart_dev ? uart_dev : (const struct device *)&uart_dev_stub, evt, NULL);
+    uart_callback(
+        uart_dev ? uart_dev : (const struct device *)&uart_dev_stub, evt, NULL);
 }
 #endif

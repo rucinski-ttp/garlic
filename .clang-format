@@ -28,7 +28,7 @@ AlignOperands: true
 AlignTrailingComments: true
 
 # Line Breaking
-ColumnLimit: 100
+ColumnLimit: 80
 AllowAllParametersOfDeclarationOnNextLine: true
 AllowShortBlocksOnASingleLine: Never
 AllowShortCaseLabelsOnASingleLine: false
@@ -37,8 +37,8 @@ AllowShortIfStatementsOnASingleLine: Never
 AllowShortLoopsOnASingleLine: false
 AlwaysBreakAfterReturnType: None
 AlwaysBreakBeforeMultilineStrings: false
-BinPackArguments: true
-BinPackParameters: true
+BinPackArguments: false
+BinPackParameters: false
 BreakBeforeBinaryOperators: None
 BreakBeforeBraces: Linux
 BreakBeforeTernaryOperators: false
@@ -124,3 +124,6 @@ BraceWrapping:
   SplitEmptyFunction: true
   SplitEmptyRecord: true
   SplitEmptyNamespace: true
+
+# (Note: per-language overrides for pure C are not supported in this
+# clang-format version; set global ColumnLimit and argument bin packing.)

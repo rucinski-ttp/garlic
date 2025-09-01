@@ -2,8 +2,10 @@
  * @brief Register BLE control command handler.
  *
  * Provides a command under CMD_ID_BLE_CTRL (0x0200) with the following ops:
- *  - op=0x00 GET_STATUS -> response payload: [adv:1][conn:1][last_disc_reason:1]
- *  - op=0x01 SET_ADV [en:1] -> response payload: empty (status indicates result)
+ *  - op=0x00 GET_STATUS -> response payload:
+ * [adv:1][conn:1][last_disc_reason:1]
+ *  - op=0x01 SET_ADV [en:1] -> response payload: empty (status indicates
+ * result)
  */
 
 #pragma once

@@ -43,7 +43,10 @@ void grlc_ble_runtime_init(void)
     }
 
     grlc_cmd_transport_bind(&s_ble_cmd, &s_ble_transport);
-    grlc_transport_init(&s_ble_transport, &lower_if_ble, grlc_cmd_get_transport_cb(), &s_ble_cmd);
+    grlc_transport_init(&s_ble_transport,
+                        &lower_if_ble,
+                        grlc_cmd_get_transport_cb(),
+                        &s_ble_cmd);
     int ble_rc = grlc_ble_init(ble_rx_shim, &s_ble_transport);
     if (ble_rc == 0) {
         LOG_INF("BLE ready");

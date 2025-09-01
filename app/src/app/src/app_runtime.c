@@ -93,7 +93,15 @@ static void app_thread(void *a, void *b, void *c)
 }
 
 /* Configure a dedicated thread for the app runtime */
-K_THREAD_DEFINE(garlic_app_thread, 2048, app_thread, NULL, NULL, NULL, K_PRIO_PREEMPT(7), 0, 0);
+K_THREAD_DEFINE(garlic_app_thread,
+                2048,
+                app_thread,
+                NULL,
+                NULL,
+                NULL,
+                K_PRIO_PREEMPT(7),
+                0,
+                0);
 
 /* BLE driver is authoritative for advertising/connect status and control */
 int grlc_app_ble_set_advertising(bool enable)

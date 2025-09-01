@@ -7,8 +7,10 @@
  * op=0x01: SET_ADV [en:1] -> resp: empty
  */
 
-static command_status_t ble_ctrl_handler(const uint8_t *req_payload, size_t req_len,
-                                         uint8_t *resp_buf, size_t *resp_len)
+static command_status_t ble_ctrl_handler(const uint8_t *req_payload,
+                                         size_t req_len,
+                                         uint8_t *resp_buf,
+                                         size_t *resp_len)
 {
     command_status_t st = CMD_STATUS_OK;
     if (!req_payload || req_len < 1) {

@@ -46,15 +46,18 @@ struct uart_event {
 /* Test helpers from driver (available when compiled with UART_DMA_TESTING) */
 void uart_dma_test_reset(void);
 void uart_dma_test_invoke_event(struct uart_event *evt);
-void uart_dma_test_set_hal_rx_buf_rsp(int (*fn)(const struct device *, unsigned char *,
+void uart_dma_test_set_hal_rx_buf_rsp(int (*fn)(const struct device *,
+                                                unsigned char *,
                                                 unsigned long));
-void uart_dma_test_set_hal_rx_enable(int (*fn)(const struct device *, unsigned char *,
-                                               unsigned long, unsigned int));
+void uart_dma_test_set_hal_rx_enable(int (*fn)(
+    const struct device *, unsigned char *, unsigned long, unsigned int));
 /* Optional HAL shims for TX path and callback registration (host tests) */
-void uart_dma_test_set_hal_tx(int (*fn)(const struct device *, const unsigned char *, unsigned long,
-                                        unsigned int));
-void uart_dma_test_set_hal_callback_set(int (*fn)(
-    const struct device *, void (*)(const struct device *, struct uart_event *, void *), void *));
+void uart_dma_test_set_hal_tx(int (*fn)(
+    const struct device *, const unsigned char *, unsigned long, unsigned int));
+void uart_dma_test_set_hal_callback_set(
+    int (*fn)(const struct device *,
+              void (*)(const struct device *, struct uart_event *, void *),
+              void *));
 
 #ifdef __cplusplus
 }

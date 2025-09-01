@@ -150,7 +150,8 @@ int grlc_tmp119_write_low_limit(uint8_t addr7, uint16_t val);
 /**
  * @brief Unlock EEPROM registers for programming.
  *
- * Write 0x0001 to EE_UNLOCK (0x04) before writing EE1/EE2/EE3 (p.32, Sections 8.5.6–8.5.10).
+ * Write 0x0001 to EE_UNLOCK (0x04) before writing EE1/EE2/EE3 (p.32,
+ * Sections 8.5.6–8.5.10).
  *
  * @param addr7 7-bit I2C address.
  * @return 0 on success, negative errno on failure.
@@ -203,7 +204,8 @@ int grlc_tmp119_write_offset(uint8_t addr7, uint16_t val);
  * @brief Ensure the given TMP119 address has been initialized.
  *
  * Validates Device ID (0x2117) and applies default configuration if needed.
- * On validation failure, enters project fatal state (prints to RTT/UART and halts).
+ * On validation failure, enters project fatal state (prints to RTT/UART and
+ * halts).
  *
  * @param addr7 7-bit I2C address.
  */

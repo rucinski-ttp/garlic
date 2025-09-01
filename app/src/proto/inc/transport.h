@@ -52,7 +52,10 @@ struct transport_lower_if {
 };
 
 /** @brief Callback invoked when a full message is reassembled. */
-typedef void (*transport_msg_cb)(void *user, uint16_t session, const uint8_t *msg, size_t len,
+typedef void (*transport_msg_cb)(void *user,
+                                 uint16_t session,
+                                 const uint8_t *msg,
+                                 size_t len,
                                  bool is_response);
 
 struct transport_ctx {
@@ -94,7 +97,8 @@ struct transport_ctx {
     uint16_t tx_frame_payload_len; /* payload length of current frame */
     bool tx_in_progress;           /* sending in progress */
 
-    /* Transport-owned copy of the message to send (prevents caller buffer reuse issues) */
+    /* Transport-owned copy of the message to send (prevents caller buffer reuse
+     * issues) */
     uint8_t tx_msg_copy[TRANSPORT_REASSEMBLY_MAX];
     size_t tx_msg_copy_len;
 };
@@ -106,8 +110,10 @@ struct transport_ctx {
  * @param on_msg Callback invoked on complete messages
  * @param user   Opaque pointer passed to @p on_msg on delivery
  */
-void grlc_transport_init(struct transport_ctx *t, const struct transport_lower_if *lower,
-                         transport_msg_cb on_msg, void *user);
+void grlc_transport_init(struct transport_ctx *t,
+                         const struct transport_lower_if *lower,
+                         transport_msg_cb on_msg,
+                         void *user);
 
 /** @brief Reset the transport parser and reassembly state. */
 void grlc_transport_reset(struct transport_ctx *t);
@@ -118,7 +124,9 @@ void grlc_transport_reset(struct transport_ctx *t);
  * @param data Pointer to bytes
  * @param len  Byte count
  */
-void grlc_transport_rx_bytes(struct transport_ctx *t, const uint8_t *data, size_t len);
+void grlc_transport_rx_bytes(struct transport_ctx *t,
+                             const uint8_t *data,
+                             size_t len);
 
 /**
  * @brief Send a complete message (fragmented into frames as needed).
@@ -129,8 +137,11 @@ void grlc_transport_rx_bytes(struct transport_ctx *t, const uint8_t *data, size_
  * @param is_response true if this is a response (sets RESP flag)
  * @return true on accepted for write, false on invalid args
  */
-bool grlc_transport_send_message(struct transport_ctx *t, uint16_t session, const uint8_t *msg,
-                                 size_t len, bool is_response);
+bool grlc_transport_send_message(struct transport_ctx *t,
+                                 uint16_t session,
+                                 const uint8_t *msg,
+                                 size_t len,
+                                 bool is_response);
 
 /**
  * @brief Attempt to advance any in-progress TX frames (non-blocking).
@@ -141,7 +152,8 @@ bool grlc_transport_send_message(struct transport_ctx *t, uint16_t session, cons
 void grlc_transport_tx_pump(struct transport_ctx *t);
 
 /** @brief Copy current stats into @p out. */
-void grlc_transport_get_stats(const struct transport_ctx *t, struct transport_stats *out);
+void grlc_transport_get_stats(const struct transport_ctx *t,
+                              struct transport_stats *out);
 
 #ifdef __cplusplus
 }

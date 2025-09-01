@@ -18,7 +18,8 @@ static void *s_rx_user;
 
 #define NUS_CHUNK 20u
 
-static void nus_rx_cb(struct bt_conn *conn, const void *data, uint16_t len, void *ctx)
+static void
+nus_rx_cb(struct bt_conn *conn, const void *data, uint16_t len, void *ctx)
 {
     ARG_UNUSED(conn);
     ARG_UNUSED(ctx);
@@ -66,13 +67,31 @@ static int adv_start(void)
     };
     const struct bt_data ad[] = {
         BT_DATA_BYTES(BT_DATA_FLAGS, (BT_LE_AD_GENERAL | BT_LE_AD_NO_BREDR)),
-        BT_DATA(BT_DATA_NAME_COMPLETE, CONFIG_BT_DEVICE_NAME, strlen(CONFIG_BT_DEVICE_NAME)),
+        BT_DATA(BT_DATA_NAME_COMPLETE,
+                CONFIG_BT_DEVICE_NAME,
+                strlen(CONFIG_BT_DEVICE_NAME)),
     };
     const struct bt_data sd[] = {
-        BT_DATA_BYTES(BT_DATA_UUID128_ALL, 0x6E, 0x40, 0x00, 0x01, 0xB5, 0xA3, 0xF3, 0x93, 0xE0,
-                      0xA9, 0xE5, 0x0E, 0x24, 0xDC, 0xCA, 0x9E),
+        BT_DATA_BYTES(BT_DATA_UUID128_ALL,
+                      0x6E,
+                      0x40,
+                      0x00,
+                      0x01,
+                      0xB5,
+                      0xA3,
+                      0xF3,
+                      0x93,
+                      0xE0,
+                      0xA9,
+                      0xE5,
+                      0x0E,
+                      0x24,
+                      0xDC,
+                      0xCA,
+                      0x9E),
     };
-    int rc = bt_le_adv_start(&adv_param, ad, ARRAY_SIZE(ad), sd, ARRAY_SIZE(sd));
+    int rc =
+        bt_le_adv_start(&adv_param, ad, ARRAY_SIZE(ad), sd, ARRAY_SIZE(sd));
     if (rc == 0) {
         s_adv_on = true;
     }

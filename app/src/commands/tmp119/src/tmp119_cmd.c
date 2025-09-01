@@ -29,7 +29,9 @@
  *   0x0D: WRITE_OFFSET(u16)    -> resp: empty
  */
 
-static command_status_t handle_tmp119(const uint8_t *req, size_t req_len, uint8_t *resp,
+static command_status_t handle_tmp119(const uint8_t *req,
+                                      size_t req_len,
+                                      uint8_t *resp,
                                       size_t *resp_len)
 {
     command_status_t st = CMD_STATUS_OK;

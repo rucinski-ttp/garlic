@@ -68,7 +68,8 @@ void grlc_uart_runtime_init(void)
     grlc_uart_clear_rx_buffer();
 
     grlc_cmd_transport_bind(&s_uart_cmd, &s_uart_transport);
-    grlc_transport_init(&s_uart_transport, &lower_if, grlc_cmd_get_transport_cb(), &s_uart_cmd);
+    grlc_transport_init(
+        &s_uart_transport, &lower_if, grlc_cmd_get_transport_cb(), &s_uart_cmd);
     grlc_cmd_transport_init();
     LOG_INF("UART transport ready");
 }

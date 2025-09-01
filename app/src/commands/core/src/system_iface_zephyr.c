@@ -11,7 +11,8 @@ uint64_t grlc_sys_uptime_ms(void)
 size_t grlc_sys_flash_read(uint32_t addr, uint8_t *dst, size_t len)
 {
 #if defined(CONFIG_FLASH)
-    const struct device *flash = DEVICE_DT_GET(DT_CHOSEN(zephyr_flash_controller));
+    const struct device *flash =
+        DEVICE_DT_GET(DT_CHOSEN(zephyr_flash_controller));
     if (!device_is_ready(flash)) {
         return 0;
     }

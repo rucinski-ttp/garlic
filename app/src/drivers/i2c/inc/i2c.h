@@ -46,7 +46,11 @@ int grlc_i2c_init(void);
  * @param user  Opaque pointer returned to the callback.
  * @return 0 if accepted, negative errno on error.
  */
-int grlc_i2c_write(uint16_t addr, const uint8_t *data, size_t len, i2c_async_cb_t cb, void *user);
+int grlc_i2c_write(uint16_t addr,
+                   const uint8_t *data,
+                   size_t len,
+                   i2c_async_cb_t cb,
+                   void *user);
 
 /**
  * @brief Submit an asynchronous I2C read.
@@ -58,13 +62,15 @@ int grlc_i2c_write(uint16_t addr, const uint8_t *data, size_t len, i2c_async_cb_
  * @param user  Opaque pointer returned to the callback.
  * @return 0 if accepted, negative errno on error.
  */
-int grlc_i2c_read(uint16_t addr, uint8_t *data, size_t len, i2c_async_cb_t cb, void *user);
+int grlc_i2c_read(
+    uint16_t addr, uint8_t *data, size_t len, i2c_async_cb_t cb, void *user);
 
 /**
  * @brief Submit an asynchronous write-then-read transaction (repeated start).
  *
  * @param addr   7-bit I2C address.
- * @param wdata  Buffer containing bytes to write before issuing the repeated start.
+ * @param wdata  Buffer containing bytes to write before issuing the repeated
+ * start.
  * @param wlen   Number of bytes to write.
  * @param rdata  Buffer to receive data after the repeated start.
  * @param rlen   Number of bytes to read.
@@ -72,8 +78,13 @@ int grlc_i2c_read(uint16_t addr, uint8_t *data, size_t len, i2c_async_cb_t cb, v
  * @param user   Opaque pointer returned to the callback.
  * @return 0 if accepted, negative errno on error.
  */
-int grlc_i2c_write_read(uint16_t addr, const uint8_t *wdata, size_t wlen, uint8_t *rdata,
-                        size_t rlen, i2c_async_cb_t cb, void *user);
+int grlc_i2c_write_read(uint16_t addr,
+                        const uint8_t *wdata,
+                        size_t wlen,
+                        uint8_t *rdata,
+                        size_t rlen,
+                        i2c_async_cb_t cb,
+                        void *user);
 
 /**
  * @brief Blocking write wrapper built atop the async API.
@@ -84,7 +95,10 @@ int grlc_i2c_write_read(uint16_t addr, const uint8_t *wdata, size_t wlen, uint8_
  * @param timeout_ms Timeout in milliseconds (<=0 for no wait).
  * @return 0 on success, negative errno on failure or timeout.
  */
-int grlc_i2c_blocking_write(uint16_t addr, const uint8_t *data, size_t len, int timeout_ms);
+int grlc_i2c_blocking_write(uint16_t addr,
+                            const uint8_t *data,
+                            size_t len,
+                            int timeout_ms);
 
 /**
  * @brief Blocking read wrapper built atop the async API.
@@ -95,7 +109,10 @@ int grlc_i2c_blocking_write(uint16_t addr, const uint8_t *data, size_t len, int 
  * @param timeout_ms Timeout in milliseconds (<=0 for no wait).
  * @return 0 on success, negative errno on failure or timeout.
  */
-int grlc_i2c_blocking_read(uint16_t addr, uint8_t *data, size_t len, int timeout_ms);
+int grlc_i2c_blocking_read(uint16_t addr,
+                           uint8_t *data,
+                           size_t len,
+                           int timeout_ms);
 
 /**
  * @brief Blocking write-then-read wrapper (repeated start).
@@ -108,8 +125,12 @@ int grlc_i2c_blocking_read(uint16_t addr, uint8_t *data, size_t len, int timeout
  * @param timeout_ms Timeout in milliseconds (<=0 for no wait).
  * @return 0 on success, negative errno on failure or timeout.
  */
-int grlc_i2c_blocking_write_read(uint16_t addr, const uint8_t *wdata, size_t wlen, uint8_t *rdata,
-                                 size_t rlen, int timeout_ms);
+int grlc_i2c_blocking_write_read(uint16_t addr,
+                                 const uint8_t *wdata,
+                                 size_t wlen,
+                                 uint8_t *rdata,
+                                 size_t rlen,
+                                 int timeout_ms);
 
 /**
  * @brief Attempt bus recovery via SCL toggling if the driver supports it.

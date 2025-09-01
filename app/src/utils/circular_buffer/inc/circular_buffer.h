@@ -73,7 +73,9 @@ bool grlc_cb_is_full(const circular_buffer_t *cb);
  * @param len      Out length of contiguous region.
  * @return 0 on success, -1 if buffer is empty or params invalid.
  */
-int grlc_cb_get_read_block(const circular_buffer_t *cb, uint8_t **data_ptr, size_t *len);
+int grlc_cb_get_read_block(const circular_buffer_t *cb,
+                           uint8_t **data_ptr,
+                           size_t *len);
 /**
  * @brief Advance the read index by @p len bytes.
  * @param cb  Buffer descriptor.
@@ -87,7 +89,9 @@ void grlc_cb_advance_read(circular_buffer_t *cb, size_t len);
  * @param len      Out length of contiguous region.
  * @return 0 on success (len > 0), -1 on full/invalid.
  */
-int grlc_cb_get_write_block(circular_buffer_t *cb, uint8_t **data_ptr, size_t *len);
+int grlc_cb_get_write_block(circular_buffer_t *cb,
+                            uint8_t **data_ptr,
+                            size_t *len);
 /**
  * @brief Advance the write index by @p len bytes.
  * @param cb  Buffer descriptor.

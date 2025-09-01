@@ -20,7 +20,8 @@ static inline size_t cb_advance(size_t idx, size_t inc, size_t size)
 
 int grlc_cb_init(circular_buffer_t *cb, uint8_t *buffer, size_t size)
 {
-    if (cb == NULL || buffer == NULL || size < 2) { /* need at least 2 to keep one free */
+    if (cb == NULL || buffer == NULL ||
+        size < 2) { /* need at least 2 to keep one free */
         return -1;
     }
     cb->buffer = buffer;
@@ -118,7 +119,9 @@ size_t grlc_cb_peek(const circular_buffer_t *cb, uint8_t *data, size_t len)
     return to_peek;
 }
 
-int grlc_cb_get_read_block(const circular_buffer_t *cb, uint8_t **data_ptr, size_t *len)
+int grlc_cb_get_read_block(const circular_buffer_t *cb,
+                           uint8_t **data_ptr,
+                           size_t *len)
 {
     if (!cb || !data_ptr || !len || grlc_cb_is_empty(cb)) {
         return -1;
@@ -143,7 +146,9 @@ void grlc_cb_advance_read(circular_buffer_t *cb, size_t len)
     cb->tail = cb_advance(cb->tail, adv, cb->size);
 }
 
-int grlc_cb_get_write_block(circular_buffer_t *cb, uint8_t **data_ptr, size_t *len)
+int grlc_cb_get_write_block(circular_buffer_t *cb,
+                            uint8_t **data_ptr,
+                            size_t *len)
 {
     if (!cb || !data_ptr || !len || grlc_cb_is_full(cb)) {
         return -1;

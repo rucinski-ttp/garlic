@@ -6,8 +6,8 @@ LOG_MODULE_REGISTER(cmd_echo, LOG_LEVEL_INF);
 #include "commands/inc/command.h"
 #include "commands/inc/ids.h"
 
-static command_status_t echo_handler(const uint8_t *in, size_t in_len, uint8_t *out,
-                                     size_t *out_len)
+static command_status_t
+echo_handler(const uint8_t *in, size_t in_len, uint8_t *out, size_t *out_len)
 {
     command_status_t st = CMD_STATUS_OK;
     if (!out || !out_len) {

@@ -6,7 +6,9 @@
 #define GARLIC_GIT_HASH "unknown"
 #endif
 
-static command_status_t git_version_handler(const uint8_t *in, size_t in_len, uint8_t *out,
+static command_status_t git_version_handler(const uint8_t *in,
+                                            size_t in_len,
+                                            uint8_t *out,
                                             size_t *out_len)
 {
     (void)in;

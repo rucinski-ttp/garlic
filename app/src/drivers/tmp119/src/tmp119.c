@@ -26,8 +26,8 @@ static inline int addr7_to_zephyr(uint8_t addr7)
 /* Expected device ID (Section 8.5.11, p.33) */
 #define TMP119_DEVICE_ID_EXPECTED 0x2117u
 
-/* Default configuration (Section 8.5.3): continuous conversion, comparator mode,
- * typical defaults. Exact field mapping: refer to datasheet 8.5.3.
+/* Default configuration (Section 8.5.3): continuous conversion, comparator
+ * mode, typical defaults. Exact field mapping: refer to datasheet 8.5.3.
  */
 #define TMP119_CONFIG_DEFAULT 0x0000u
 
@@ -36,7 +36,8 @@ static bool s_verified[128];
 static int reg_read16(uint8_t addr7, uint8_t reg, uint16_t *out)
 {
     uint8_t rx[2] = {0};
-    int rc = grlc_i2c_blocking_write_read(addr7_to_zephyr(addr7), &reg, 1, rx, 2, 100);
+    int rc = grlc_i2c_blocking_write_read(
+        addr7_to_zephyr(addr7), &reg, 1, rx, 2, 100);
     if (rc)
         return rc;
     /* TMP119 returns MSB first; assemble big-endian to host */
@@ -109,7 +110,8 @@ static void ensure_initialized(uint8_t addr7)
     }
     if (!s_verified[addr7 & 0x7F]) {
         char msg[64];
-        snprintf(msg, sizeof msg, "TMP119 not initialized at 0x%02x", addr7 & 0x7F);
+        snprintf(
+            msg, sizeof msg, "TMP119 not initialized at 0x%02x", addr7 & 0x7F);
         grlc_assert_fatal(msg);
     }
 }

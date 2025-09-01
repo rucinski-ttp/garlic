@@ -29,14 +29,18 @@ typedef enum {
 
 /**
  * @brief Command handler function signature.
- * @param req_payload Pointer to request payload bytes (may be NULL if req_len==0).
+ * @param req_payload Pointer to request payload bytes (may be NULL if
+ * req_len==0).
  * @param req_len Request payload length in bytes.
  * @param resp_buf Output buffer to place response payload.
- * @param resp_len In/out: on entry, capacity of resp_buf; on return, bytes written.
+ * @param resp_len In/out: on entry, capacity of resp_buf; on return, bytes
+ * written.
  * @return Status code indicating success or specific failure.
  */
-typedef command_status_t (*command_handler_fn)(const uint8_t *req_payload, size_t req_len,
-                                               uint8_t *resp_buf, size_t *resp_len);
+typedef command_status_t (*command_handler_fn)(const uint8_t *req_payload,
+                                               size_t req_len,
+                                               uint8_t *resp_buf,
+                                               size_t *resp_len);
 
 /**
  * @brief Initialize the global command registry.
@@ -59,8 +63,12 @@ bool grlc_cmd_register(uint16_t cmd_id, command_handler_fn handler);
  * @param status_out Filled with handler status.
  * @return true if dispatch executed (handler found and packing succeeded).
  */
-bool grlc_cmd_dispatch(uint16_t cmd_id, const uint8_t *in, size_t in_len, uint8_t *out,
-                       size_t *out_len, uint16_t *status_out);
+bool grlc_cmd_dispatch(uint16_t cmd_id,
+                       const uint8_t *in,
+                       size_t in_len,
+                       uint8_t *out,
+                       size_t *out_len,
+                       uint16_t *status_out);
 
 /**
  * @brief Pack a request message payload for transport.
@@ -72,8 +80,12 @@ bool grlc_cmd_dispatch(uint16_t cmd_id, const uint8_t *in, size_t in_len, uint8_
  * @param out_len Filled with number of bytes written to out_buf.
  * @return true on success, false on invalid arguments or insufficient capacity.
  */
-bool grlc_cmd_pack_request(uint16_t cmd_id, const uint8_t *payload, uint16_t payload_len,
-                           uint8_t *out_buf, size_t out_cap, size_t *out_len);
+bool grlc_cmd_pack_request(uint16_t cmd_id,
+                           const uint8_t *payload,
+                           uint16_t payload_len,
+                           uint8_t *out_buf,
+                           size_t out_cap,
+                           size_t *out_len);
 /**
  * @brief Parse a request message payload extracted from transport.
  * @param in Pointer to packed request bytes.
@@ -83,8 +95,11 @@ bool grlc_cmd_pack_request(uint16_t cmd_id, const uint8_t *payload, uint16_t pay
  * @param payload_len Filled with payload length.
  * @return true on success, false if the buffer is malformed or too short.
  */
-bool grlc_cmd_parse_request(const uint8_t *in, size_t in_len, uint16_t *cmd_id_out,
-                            const uint8_t **payload, uint16_t *payload_len);
+bool grlc_cmd_parse_request(const uint8_t *in,
+                            size_t in_len,
+                            uint16_t *cmd_id_out,
+                            const uint8_t **payload,
+                            uint16_t *payload_len);
 /**
  * @brief Pack a response message payload for transport.
  * @param cmd_id Command identifier (echoes the request ID).
@@ -96,8 +111,12 @@ bool grlc_cmd_parse_request(const uint8_t *in, size_t in_len, uint16_t *cmd_id_o
  * @param out_len Filled with number of bytes written to out_buf.
  * @return true on success, false on invalid arguments or insufficient capacity.
  */
-bool grlc_cmd_pack_response(uint16_t cmd_id, uint16_t status, const uint8_t *payload,
-                            uint16_t payload_len, uint8_t *out_buf, size_t out_cap,
+bool grlc_cmd_pack_response(uint16_t cmd_id,
+                            uint16_t status,
+                            const uint8_t *payload,
+                            uint16_t payload_len,
+                            uint8_t *out_buf,
+                            size_t out_cap,
                             size_t *out_len);
 /**
  * @brief Parse a response message payload extracted from transport.
@@ -109,8 +128,12 @@ bool grlc_cmd_pack_response(uint16_t cmd_id, uint16_t status, const uint8_t *pay
  * @param payload_len Filled with payload length.
  * @return true on success, false if the buffer is malformed or too short.
  */
-bool grlc_cmd_parse_response(const uint8_t *in, size_t in_len, uint16_t *cmd_id_out,
-                             uint16_t *status_out, const uint8_t **payload, uint16_t *payload_len);
+bool grlc_cmd_parse_response(const uint8_t *in,
+                             size_t in_len,
+                             uint16_t *cmd_id_out,
+                             uint16_t *status_out,
+                             const uint8_t **payload,
+                             uint16_t *payload_len);
 
 #ifdef __cplusplus
 }

@@ -23,8 +23,8 @@ LOG_MODULE_REGISTER(cmd_i2c, CONFIG_LOG_DEFAULT_LEVEL);
  *  - read or write_read: rdata[rlen]
  */
 
-static command_status_t handle_i2c(const uint8_t *req, size_t req_len, uint8_t *resp,
-                                   size_t *resp_len)
+static command_status_t
+handle_i2c(const uint8_t *req, size_t req_len, uint8_t *resp, size_t *resp_len)
 {
     if (req_len < 2) {
         return CMD_STATUS_ERR_INVALID;
@@ -66,7 +66,8 @@ static command_status_t handle_i2c(const uint8_t *req, size_t req_len, uint8_t *
         }
         rc = grlc_i2c_blocking_read(addr7, resp, rlen, timeout_ms);
         if (rc) {
-            I2C_LOG_ERR("i2c read addr=0x%02x len=%u rc=%d", addr7, (unsigned)rlen, rc);
+            I2C_LOG_ERR(
+                "i2c read addr=0x%02x len=%u rc=%d", addr7, (unsigned)rlen, rc);
             return CMD_STATUS_ERR_INTERNAL;
         }
         *resp_len = rlen;
@@ -75,10 +76,14 @@ static command_status_t handle_i2c(const uint8_t *req, size_t req_len, uint8_t *
         if (*resp_len < rlen) {
             return CMD_STATUS_ERR_BOUNDS;
         }
-        rc = grlc_i2c_blocking_write_read(addr7, wdata, wlen, resp, rlen, timeout_ms);
+        rc = grlc_i2c_blocking_write_read(
+            addr7, wdata, wlen, resp, rlen, timeout_ms);
         if (rc) {
-            I2C_LOG_ERR("i2c wr rd addr=0x%02x wlen=%u rlen=%u rc=%d", addr7, (unsigned)wlen,
-                        (unsigned)rlen, rc);
+            I2C_LOG_ERR("i2c wr rd addr=0x%02x wlen=%u rlen=%u rc=%d",
+                        addr7,
+                        (unsigned)wlen,
+                        (unsigned)rlen,
+                        rc);
             return CMD_STATUS_ERR_INTERNAL;
         }
         *resp_len = rlen;

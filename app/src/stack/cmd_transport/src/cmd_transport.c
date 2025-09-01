@@ -10,7 +10,10 @@
 LOG_MODULE_REGISTER(cmd_transport, LOG_LEVEL_INF);
 #endif
 
-static void transport_cb(void *user, uint16_t session, const uint8_t *msg, size_t len,
+static void transport_cb(void *user,
+                         uint16_t session,
+                         const uint8_t *msg,
+                         size_t len,
                          bool is_response)
 {
     struct cmd_transport_binding *b = (struct cmd_transport_binding *)user;
@@ -45,16 +48,23 @@ static void transport_cb(void *user, uint16_t session, const uint8_t *msg, size_
         uint16_t status = (uint16_t)CMD_STATUS_ERR_UNSUPPORTED;
         size_t out_cap = sizeof(b->resp_buf) - 6;
         size_t actual_len = out_cap; /* in: capacity, out: actual length */
-        (void)grlc_cmd_dispatch(cmd_id, req, req_len, &b->resp_buf[6], &actual_len, &status);
+        (void)grlc_cmd_dispatch(
+            cmd_id, req, req_len, &b->resp_buf[6], &actual_len, &status);
         if (status != (uint16_t)CMD_STATUS_OK) {
             actual_len = 0;
         } else if (actual_len > out_cap) {
             actual_len = out_cap;
         }
         size_t packed_len = 0;
-        grlc_cmd_pack_response(cmd_id, status, &b->resp_buf[6], (uint16_t)actual_len, b->resp_buf,
-                               sizeof(b->resp_buf), &packed_len);
-        if (!grlc_transport_send_message(b->t, session, b->resp_buf, packed_len, true)) {
+        grlc_cmd_pack_response(cmd_id,
+                               status,
+                               &b->resp_buf[6],
+                               (uint16_t)actual_len,
+                               b->resp_buf,
+                               sizeof(b->resp_buf),
+                               &packed_len);
+        if (!grlc_transport_send_message(
+                b->t, session, b->resp_buf, packed_len, true)) {
             /* Transport busy: make a copy of the packed response */
             if (packed_len <= sizeof(b->pending_buf)) {
                 memcpy(b->pending_buf, b->resp_buf, packed_len);
@@ -87,7 +97,8 @@ void grlc_cmd_transport_init(void)
     }
 }
 
-void grlc_cmd_transport_bind(struct cmd_transport_binding *b, struct transport_ctx *t)
+void grlc_cmd_transport_bind(struct cmd_transport_binding *b,
+                             struct transport_ctx *t)
 {
     if (!b) {
         return;
@@ -110,7 +121,10 @@ void grlc_cmd_transport_tick(struct cmd_transport_binding *b)
     if (!b || !b->t)
         return;
     if (b->pending && !b->t->tx_in_progress) {
-        if (grlc_transport_send_message(b->t, b->pending_session, b->pending_buf, b->pending_len,
+        if (grlc_transport_send_message(b->t,
+                                        b->pending_session,
+                                        b->pending_buf,
+                                        b->pending_len,
                                         true)) {
             b->pending = false;
             grlc_transport_tx_pump(b->t);

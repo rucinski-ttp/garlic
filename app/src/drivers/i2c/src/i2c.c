@@ -18,12 +18,18 @@ int grlc_i2c_init(void)
     if (!device_is_ready(i2c_dev)) {
         return -ENODEV;
     }
-    /* Try to set a conservative speed; some stacks may not support runtime configure. */
-    (void)i2c_configure(i2c_dev, I2C_MODE_CONTROLLER | I2C_SPEED_SET(I2C_SPEED_STANDARD));
+    /* Try to set a conservative speed; some stacks may not support runtime
+     * configure. */
+    (void)i2c_configure(
+        i2c_dev, I2C_MODE_CONTROLLER | I2C_SPEED_SET(I2C_SPEED_STANDARD));
     return 0;
 }
 
-int grlc_i2c_write(uint16_t addr, const uint8_t *data, size_t len, i2c_async_cb_t cb, void *user)
+int grlc_i2c_write(uint16_t addr,
+                   const uint8_t *data,
+                   size_t len,
+                   i2c_async_cb_t cb,
+                   void *user)
 {
     if (!i2c_dev || !data || len == 0)
         return -EINVAL;
@@ -44,7 +50,8 @@ int grlc_i2c_write(uint16_t addr, const uint8_t *data, size_t len, i2c_async_cb_
     return 0;
 }
 
-int grlc_i2c_read(uint16_t addr, uint8_t *data, size_t len, i2c_async_cb_t cb, void *user)
+int grlc_i2c_read(
+    uint16_t addr, uint8_t *data, size_t len, i2c_async_cb_t cb, void *user)
 {
     if (!i2c_dev || !data || len == 0)
         return -EINVAL;
@@ -65,8 +72,13 @@ int grlc_i2c_read(uint16_t addr, uint8_t *data, size_t len, i2c_async_cb_t cb, v
     return 0;
 }
 
-int grlc_i2c_write_read(uint16_t addr, const uint8_t *wdata, size_t wlen, uint8_t *rdata,
-                        size_t rlen, i2c_async_cb_t cb, void *user)
+int grlc_i2c_write_read(uint16_t addr,
+                        const uint8_t *wdata,
+                        size_t wlen,
+                        uint8_t *rdata,
+                        size_t rlen,
+                        i2c_async_cb_t cb,
+                        void *user)
 {
     if (!i2c_dev || !wdata || wlen == 0 || !rdata || rlen == 0)
         return -EINVAL;
@@ -123,7 +135,10 @@ static void bridge_cb(int result, void *user)
     }
 }
 
-int grlc_i2c_blocking_write(uint16_t addr, const uint8_t *data, size_t len, int timeout_ms)
+int grlc_i2c_blocking_write(uint16_t addr,
+                            const uint8_t *data,
+                            size_t len,
+                            int timeout_ms)
 {
     struct i2c_req_ctx ctx;
     k_sem_init(&ctx.done, 0, 1);
@@ -136,7 +151,10 @@ int grlc_i2c_blocking_write(uint16_t addr, const uint8_t *data, size_t len, int 
     return ctx.result;
 }
 
-int grlc_i2c_blocking_read(uint16_t addr, uint8_t *data, size_t len, int timeout_ms)
+int grlc_i2c_blocking_read(uint16_t addr,
+                           uint8_t *data,
+                           size_t len,
+                           int timeout_ms)
 {
     struct i2c_req_ctx ctx;
     k_sem_init(&ctx.done, 0, 1);
@@ -149,13 +167,18 @@ int grlc_i2c_blocking_read(uint16_t addr, uint8_t *data, size_t len, int timeout
     return ctx.result;
 }
 
-int grlc_i2c_blocking_write_read(uint16_t addr, const uint8_t *wdata, size_t wlen, uint8_t *rdata,
-                                 size_t rlen, int timeout_ms)
+int grlc_i2c_blocking_write_read(uint16_t addr,
+                                 const uint8_t *wdata,
+                                 size_t wlen,
+                                 uint8_t *rdata,
+                                 size_t rlen,
+                                 int timeout_ms)
 {
     struct i2c_req_ctx ctx;
     k_sem_init(&ctx.done, 0, 1);
     ctx.result = -EIO;
-    int rc = grlc_i2c_write_read(addr, wdata, wlen, rdata, rlen, bridge_cb, &ctx);
+    int rc =
+        grlc_i2c_write_read(addr, wdata, wlen, rdata, rlen, bridge_cb, &ctx);
     if (rc)
         return rc;
     if (wait_sem(&ctx.done, timeout_ms) != 0)

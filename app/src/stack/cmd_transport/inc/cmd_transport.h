@@ -12,7 +12,10 @@ struct transport_ctx;
 #ifdef __ZEPHYR__
 #include <zephyr/kernel.h>
 #endif
-typedef void (*transport_msg_cb)(void *user, uint16_t session, const uint8_t *msg, size_t len,
+typedef void (*transport_msg_cb)(void *user,
+                                 uint16_t session,
+                                 const uint8_t *msg,
+                                 size_t len,
                                  bool is_response);
 
 /**
@@ -24,7 +27,8 @@ typedef void (*transport_msg_cb)(void *user, uint16_t session, const uint8_t *ms
  */
 struct cmd_transport_binding {
     struct transport_ctx *t; /**< Destination transport to send responses on */
-    uint8_t resp_buf[2048];  /**< Response buffer (>= TRANSPORT_REASSEMBLY_MAX) */
+    uint8_t
+        resp_buf[2048]; /**< Response buffer (>= TRANSPORT_REASSEMBLY_MAX) */
 #ifdef __ZEPHYR__
     struct k_mutex lock; /**< Serialize response build/send per binding */
 #endif
@@ -43,7 +47,8 @@ void grlc_cmd_transport_init(void);
  * @param b Binding object to initialize (user-owned storage)
  * @param t Transport to use for responses
  */
-void grlc_cmd_transport_bind(struct cmd_transport_binding *b, struct transport_ctx *t);
+void grlc_cmd_transport_bind(struct cmd_transport_binding *b,
+                             struct transport_ctx *t);
 
 /** @brief Get the transport message callback for commands. */
 transport_msg_cb grlc_cmd_get_transport_cb(void);
