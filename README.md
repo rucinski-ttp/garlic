@@ -9,7 +9,7 @@ This repository demonstrates embedded development using AI agents. The project i
 - **Board**: Nordic nRF52-DK (nRF52832)
 - **Framework**: Zephyr RTOS
 - **Current Application**: UART DMA echo + 1 Hz status (LED heartbeat)
-- **Protocol**: Layered serial command stack (UART DMA → Transport → Commands)
+- **Protocol**: Layered command stack (UART DMA or BLE NUS → Transport → Commands)
 - **Purpose**: Demonstrate AI agent capability for embedded development
 
 ## 🚀 Quick Start
@@ -24,8 +24,10 @@ This repository demonstrates embedded development using AI agents. The project i
 # 3. (Optional) Monitor serial output via UART
 ./scripts/monitor.sh 115200 /dev/ttyACM0
 
-# 4. (Optional) Run hardware tests (auto-detects port)
-./scripts/test_integration.sh
+# 4. (Optional) Run hardware tests (serial or BLE)
+./scripts/test_integration.sh --interface serial --port /dev/ttyUSB0
+# or over BLE by address (recommended)
+pytest -q tests/integration --run-hardware --interface ble --garlic-ble-address <MAC>
 ```
 
 ## 📁 Project Structure
@@ -109,6 +111,19 @@ python3 scripts/uart_capture.py --port /dev/ttyUSB0 --baud 115200 --outfile logs
 
 # Direct Python
 python3 scripts/rtt_capture.py --tool auto --outfile logs/rtt_$(date +%s).log
+
+Note: the helper adds a default 10s timeout (adjustable with `--timeout`).
+
+### BLE Temperature Streaming Demo
+
+Stream TMP119 temperature over BLE using the same test fixtures:
+
+```
+python3 scripts/ble_temp_stream.py --address <MAC>
+# or scan by name
+python3 scripts/ble_temp_stream.py --name GarlicDK
+```
+Options: `--interval` (seconds), `--count` (0=forever), `--addr7` (TMP119 I2C address).
 ```
 
 ## 🤖 AI Agent Instructions

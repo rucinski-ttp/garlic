@@ -5,12 +5,11 @@
 #include "proto/inc/transport.h"
 
 static uint8_t resp_buf[TRANSPORT_REASSEMBLY_MAX];
-static struct transport_ctx *g_t = NULL;
 
 static void transport_cb(void *user, uint16_t session, const uint8_t *msg, size_t len,
                          bool is_response)
 {
-    (void)user;
+    struct transport_ctx *t_out = (struct transport_ctx *)user;
     if (is_response) {
         return;
     }
@@ -34,14 +33,14 @@ static void transport_cb(void *user, uint16_t session, const uint8_t *msg, size_
     size_t packed_len = 0;
     command_pack_response(cmd_id, status, &resp_buf[6], (uint16_t)actual_len, resp_buf,
                           sizeof(resp_buf), &packed_len);
-    if (g_t) {
-        transport_send_message(g_t, session, resp_buf, packed_len, true);
+    if (t_out) {
+        transport_send_message(t_out, session, resp_buf, packed_len, true);
     }
 }
 
 void cmd_transport_init(struct transport_ctx *t)
 {
-    g_t = t;
+    (void)t; /* no global binding; responses go to 'user' transport */
     command_registry_init();
     command_register_builtin();
 }

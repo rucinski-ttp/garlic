@@ -158,3 +158,15 @@ class CommandClient:
         _, status, _ = self._req(0x0119, payload, timeout)
         if status != 0:
             raise RuntimeError(f'TMP119 WRITE_OFFSET failed: status={status}')
+
+    # --- BLE control ---
+    def ble_get_status(self, timeout: float = 1.0) -> tuple[bool, bool]:
+        _, status, data = self._req(0x0200, struct.pack('<B', 0x00), timeout)
+        if status != 0 or len(data) != 2:
+            raise RuntimeError(f'BLE GET_STATUS failed: status={status}')
+        return (data[0] != 0, data[1] != 0)
+
+    def ble_set_advertising(self, enable: bool, timeout: float = 1.0) -> None:
+        _, status, data = self._req(0x0200, struct.pack('<BB', 0x01, 1 if enable else 0), timeout)
+        if status != 0:
+            raise RuntimeError(f'BLE SET_ADV failed: status={status}')
