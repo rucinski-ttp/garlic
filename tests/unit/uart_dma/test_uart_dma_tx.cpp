@@ -3,8 +3,8 @@
 #include <gtest/gtest.h>
 
 extern "C" {
-#include "drivers/uart_dma/inc/uart_dma.h"
-#include "drivers/uart_dma/inc/uart_dma_test.h"
+#include "drivers/uart/inc/uart.h"
+#include "drivers/uart/inc/uart_test.h"
 }
 
 namespace {
@@ -44,12 +44,12 @@ TEST(UartDmaTx, SendAndCompleteUpdatesStats)
     uart_dma_test_set_hal_rx_enable(&stub_rx_enable);
     uart_dma_test_set_hal_tx(&stub_tx);
 
-    ASSERT_EQ(uart_dma_init(), UART_DMA_STATUS_OK);
+    ASSERT_EQ(grlc_uart_init(), UART_DMA_STATUS_OK);
 
     // Send a small buffer; driver should issue one TX and then we simulate completion
     uint8_t buf[64];
     for (int i = 0; i < (int)sizeof(buf); ++i) buf[i] = (uint8_t)i;
-    ASSERT_EQ(uart_dma_send(buf, sizeof(buf)), UART_DMA_STATUS_OK);
+    ASSERT_EQ(grlc_uart_send(buf, sizeof(buf)), UART_DMA_STATUS_OK);
 
     // The driver reads up to 256 bytes; expect one TX call with len==64
     ASSERT_EQ(stub_tx_calls, 1);
@@ -60,11 +60,10 @@ TEST(UartDmaTx, SendAndCompleteUpdatesStats)
     uart_dma_test_invoke_event(&e);
 
     uart_statistics stats{};
-    uart_dma_get_statistics(&stats);
+    grlc_uart_get_statistics(&stats);
     EXPECT_GE(stats.tx_bytes, (uint32_t)sizeof(buf));
-    EXPECT_TRUE(uart_dma_tx_complete());
+    EXPECT_TRUE(grlc_uart_tx_complete());
 
     // Sending a byte API should also work
-    ASSERT_EQ(uart_dma_send_byte(0xAA), UART_DMA_STATUS_OK);
+    ASSERT_EQ(grlc_uart_send_byte(0xAA), UART_DMA_STATUS_OK);
 }
-

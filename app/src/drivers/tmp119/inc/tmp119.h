@@ -41,7 +41,7 @@ extern "C" {
  * to verify presence.
  * @return 0 on success, negative errno on failure.
  */
-int tmp119_init(void);
+int grlc_tmp119_init(void);
 
 /**
  * @brief Probe and initialize TMP119 at boot.
@@ -53,7 +53,7 @@ int tmp119_init(void);
  *
  * @return number of devices initialized (>=0) or negative errno on failure.
  */
-int tmp119_boot_init(void);
+int grlc_tmp119_boot_init(void);
 
 /**
  * @brief Read the 16-bit device ID register.
@@ -64,7 +64,7 @@ int tmp119_boot_init(void);
  * @param id_out Pointer to store device ID.
  * @return 0 on success, negative errno on failure.
  */
-int tmp119_read_device_id(uint8_t addr7, uint16_t *id_out);
+int grlc_tmp119_read_device_id(uint8_t addr7, uint16_t *id_out);
 
 /**
  * @brief Read raw temperature register (16-bit).
@@ -76,7 +76,7 @@ int tmp119_read_device_id(uint8_t addr7, uint16_t *id_out);
  * @param raw_out Pointer to store raw register value (MSB:bit15).
  * @return 0 on success, negative errno on failure.
  */
-int tmp119_read_temperature_raw(uint8_t addr7, uint16_t *raw_out);
+int grlc_tmp119_read_temperature_raw(uint8_t addr7, uint16_t *raw_out);
 
 /**
  * @brief Read temperature in milli-Celsius.
@@ -87,7 +87,7 @@ int tmp119_read_temperature_raw(uint8_t addr7, uint16_t *raw_out);
  * @param mC_out Pointer to store temperature in milli-Celsius.
  * @return 0 on success, negative errno on failure.
  */
-int tmp119_read_temperature_mC(uint8_t addr7, int32_t *mC_out);
+int grlc_tmp119_read_temperature_mC(uint8_t addr7, int32_t *mC_out);
 
 /**
  * @brief Read configuration register.
@@ -98,7 +98,7 @@ int tmp119_read_temperature_mC(uint8_t addr7, int32_t *mC_out);
  * @param cfg_out Pointer to store configuration register.
  * @return 0 on success, negative errno on failure.
  */
-int tmp119_read_config(uint8_t addr7, uint16_t *cfg_out);
+int grlc_tmp119_read_config(uint8_t addr7, uint16_t *cfg_out);
 
 /**
  * @brief Write configuration register.
@@ -107,7 +107,7 @@ int tmp119_read_config(uint8_t addr7, uint16_t *cfg_out);
  * @param cfg Configuration value to write.
  * @return 0 on success, negative errno on failure.
  */
-int tmp119_write_config(uint8_t addr7, uint16_t cfg);
+int grlc_tmp119_write_config(uint8_t addr7, uint16_t cfg);
 
 /**
  * @brief Read high temperature limit register.
@@ -117,7 +117,7 @@ int tmp119_write_config(uint8_t addr7, uint16_t cfg);
  * @param val_out Pointer to store 16-bit value.
  * @return 0 on success, negative errno on failure.
  */
-int tmp119_read_high_limit(uint8_t addr7, uint16_t *val_out);
+int grlc_tmp119_read_high_limit(uint8_t addr7, uint16_t *val_out);
 
 /**
  * @brief Write high temperature limit register.
@@ -126,7 +126,7 @@ int tmp119_read_high_limit(uint8_t addr7, uint16_t *val_out);
  * @param val 16-bit value to write.
  * @return 0 on success, negative errno on failure.
  */
-int tmp119_write_high_limit(uint8_t addr7, uint16_t val);
+int grlc_tmp119_write_high_limit(uint8_t addr7, uint16_t val);
 
 /**
  * @brief Read low temperature limit register.
@@ -136,7 +136,7 @@ int tmp119_write_high_limit(uint8_t addr7, uint16_t val);
  * @param val_out Pointer to store 16-bit value.
  * @return 0 on success, negative errno on failure.
  */
-int tmp119_read_low_limit(uint8_t addr7, uint16_t *val_out);
+int grlc_tmp119_read_low_limit(uint8_t addr7, uint16_t *val_out);
 
 /**
  * @brief Write low temperature limit register.
@@ -145,7 +145,7 @@ int tmp119_read_low_limit(uint8_t addr7, uint16_t *val_out);
  * @param val 16-bit value to write.
  * @return 0 on success, negative errno on failure.
  */
-int tmp119_write_low_limit(uint8_t addr7, uint16_t val);
+int grlc_tmp119_write_low_limit(uint8_t addr7, uint16_t val);
 
 /**
  * @brief Unlock EEPROM registers for programming.
@@ -155,7 +155,7 @@ int tmp119_write_low_limit(uint8_t addr7, uint16_t val);
  * @param addr7 7-bit I2C address.
  * @return 0 on success, negative errno on failure.
  */
-int tmp119_unlock_eeprom(uint8_t addr7);
+int grlc_tmp119_unlock_eeprom(uint8_t addr7);
 
 /**
  * @brief Read EEPROM register by index (1..3 maps to EE1, EE2, EE3).
@@ -167,7 +167,7 @@ int tmp119_unlock_eeprom(uint8_t addr7);
  * @param val_out Pointer to store 16-bit value.
  * @return 0 on success, negative errno on failure.
  */
-int tmp119_read_eeprom(uint8_t addr7, uint8_t index, uint16_t *val_out);
+int grlc_tmp119_read_eeprom(uint8_t addr7, uint8_t index, uint16_t *val_out);
 
 /**
  * @brief Write EEPROM register by index (1..3) after unlock.
@@ -177,7 +177,7 @@ int tmp119_read_eeprom(uint8_t addr7, uint8_t index, uint16_t *val_out);
  * @param val 16-bit value to write.
  * @return 0 on success, negative errno on failure.
  */
-int tmp119_write_eeprom(uint8_t addr7, uint8_t index, uint16_t val);
+int grlc_tmp119_write_eeprom(uint8_t addr7, uint8_t index, uint16_t val);
 
 /**
  * @brief Read temperature offset register (0x07).
@@ -188,7 +188,7 @@ int tmp119_write_eeprom(uint8_t addr7, uint8_t index, uint16_t val);
  * @param val_out Pointer to store 16-bit value.
  * @return 0 on success, negative errno on failure.
  */
-int tmp119_read_offset(uint8_t addr7, uint16_t *val_out);
+int grlc_tmp119_read_offset(uint8_t addr7, uint16_t *val_out);
 
 /**
  * @brief Write temperature offset register (0x07).
@@ -197,7 +197,7 @@ int tmp119_read_offset(uint8_t addr7, uint16_t *val_out);
  * @param val 16-bit value to write.
  * @return 0 on success, negative errno on failure.
  */
-int tmp119_write_offset(uint8_t addr7, uint16_t val);
+int grlc_tmp119_write_offset(uint8_t addr7, uint16_t val);
 
 /**
  * @brief Ensure the given TMP119 address has been initialized.
@@ -207,7 +207,7 @@ int tmp119_write_offset(uint8_t addr7, uint16_t val);
  *
  * @param addr7 7-bit I2C address.
  */
-void tmp119_require_initialized(uint8_t addr7);
+void grlc_tmp119_require_initialized(uint8_t addr7);
 
 #ifdef __cplusplus
 }

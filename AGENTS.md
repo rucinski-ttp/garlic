@@ -8,7 +8,7 @@ Welcome! This document orients AI agents (and humans) to the Garlic nRF52-DK pro
 - RTOS: Zephyr 3.7
 - Goal: DMA-based, non-blocking UART using a circular buffer, tested with unit tests (GTest) and hardware pytest.
 - Debug/logging: RTT enabled; UART used for data path and status messages.
-- Protocol: Layered command stack (UART DMA or BLE NUS → Transport → Commands), documented in docs/PROTOCOL.md
+- Protocol: Layered command stack (UART DMA or BLE NUS → Transport → Commands), documented in docs/2-0-PROTOCOL.md
 
 ## Code Layout
 
@@ -90,6 +90,11 @@ This runs with `--run-hardware` and exercises:
 - The app emits one status line per second, and one echo line per newline received.
 - LED1 indicates BLE status: blink when advertising, solid when connected.
 
+Concurrency notes (transport ↔ commands):
+- Each link (UART, BLE) binds the command transport with its own response buffer and a mutex, so
+  responses are constructed and fragmented without interference from other links. This addresses a
+  prior race where a single static response buffer could be overwritten by concurrent callbacks.
+
 ## CI
 
 - Workflow: `.github/workflows/ci.yml`
@@ -150,7 +155,7 @@ Note: A previous experimental script was moved to `scripts/legacy/rtt_monitor.py
 
 ## Protocol
 
-- Transport: framed, CRC32-verified, supports fragmentation and reassembly (no retransmissions). See docs/PROTOCOL.md.
+- Transport: framed, CRC32-verified, supports fragmentation and reassembly (no retransmissions). See docs/2-0-PROTOCOL.md.
 - Commands: request/response with status and optional payload; each command in its own module under `app/src/app/commands/`.
 
 ## Pytest Structure

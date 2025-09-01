@@ -10,7 +10,7 @@ LOG_MODULE_REGISTER(cmd_i2c, CONFIG_LOG_DEFAULT_LEVEL);
 
 #include "commands/inc/command.h"
 #include "commands/inc/ids.h"
-#include "drivers/i2c_async/inc/i2c_async.h"
+#include "drivers/i2c/inc/i2c.h"
 
 /* Request format:
  *  uint8_t  op       (0=write, 1=read, 2=write_read)
@@ -44,16 +44,16 @@ static command_status_t handle_i2c(const uint8_t *req, size_t req_len, uint8_t *
             return CMD_STATUS_ERR_INVALID;
         }
     }
-    int rc = i2c_async_init();
+    int rc = grlc_i2c_init();
     if (rc) {
         I2C_LOG_ERR("i2c init failed: %d", rc);
         return CMD_STATUS_ERR_INTERNAL;
     }
     /* Optional bus recovery before activity */
-    (void)i2c_bus_recover();
+    (void)grlc_i2c_bus_recover();
     int timeout_ms = 100; /* short blocking window backed by async */
     if (op == 0) {
-        rc = i2c_blocking_write(addr7, wdata, wlen, timeout_ms);
+        rc = grlc_i2c_blocking_write(addr7, wdata, wlen, timeout_ms);
         if (rc) {
             I2C_LOG_ERR("i2c write addr=0x%02x rc=%d", addr7, rc);
             return CMD_STATUS_ERR_INTERNAL;
@@ -64,7 +64,7 @@ static command_status_t handle_i2c(const uint8_t *req, size_t req_len, uint8_t *
         if (*resp_len < rlen) {
             return CMD_STATUS_ERR_BOUNDS;
         }
-        rc = i2c_blocking_read(addr7, resp, rlen, timeout_ms);
+        rc = grlc_i2c_blocking_read(addr7, resp, rlen, timeout_ms);
         if (rc) {
             I2C_LOG_ERR("i2c read addr=0x%02x len=%u rc=%d", addr7, (unsigned)rlen, rc);
             return CMD_STATUS_ERR_INTERNAL;
@@ -75,7 +75,7 @@ static command_status_t handle_i2c(const uint8_t *req, size_t req_len, uint8_t *
         if (*resp_len < rlen) {
             return CMD_STATUS_ERR_BOUNDS;
         }
-        rc = i2c_blocking_write_read(addr7, wdata, wlen, resp, rlen, timeout_ms);
+        rc = grlc_i2c_blocking_write_read(addr7, wdata, wlen, resp, rlen, timeout_ms);
         if (rc) {
             I2C_LOG_ERR("i2c wr rd addr=0x%02x wlen=%u rlen=%u rc=%d", addr7, (unsigned)wlen,
                         (unsigned)rlen, rc);
@@ -91,7 +91,7 @@ static command_status_t handle_i2c(const uint8_t *req, size_t req_len, uint8_t *
         }
         resp[0] = 0;
         for (uint16_t a = 0x03; a <= 0x77; ++a) {
-            if (i2c_ping(a) == 0) {
+            if (grlc_i2c_ping(a) == 0) {
                 if (1 + n < cap) {
                     resp[1 + n] = (uint8_t)a;
                     n++;
@@ -105,7 +105,7 @@ static command_status_t handle_i2c(const uint8_t *req, size_t req_len, uint8_t *
     return CMD_STATUS_ERR_INVALID;
 }
 
-void command_register_i2c(void)
+void grlc_cmd_register_i2c(void)
 {
-    command_register(CMD_ID_I2C_TRANSFER, handle_i2c);
+    grlc_cmd_register(CMD_ID_I2C_TRANSFER, handle_i2c);
 }

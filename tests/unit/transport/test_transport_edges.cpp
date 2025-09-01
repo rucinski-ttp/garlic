@@ -51,7 +51,7 @@ static std::vector<uint8_t> frame(uint8_t ver, uint8_t flags, uint16_t session,
 TEST(TransportEdges, ThreeFragmentSequence)
 {
     transport_ctx t{}; Cap cap{}; transport_lower_if lif{devnull_write};
-    transport_init(&t, &lif, on_msg, &cap);
+    grlc_transport_init(&t, &lif, on_msg, &cap);
     const size_t maxp = TRANSPORT_FRAME_MAX_PAYLOAD;
     std::vector<uint8_t> payload(maxp + 50, 0x42);
     auto f0 = frame(TRANSPORT_VERSION, TRANSPORT_FLAG_START, 0x1001, 0, 3,
@@ -60,37 +60,37 @@ TEST(TransportEdges, ThreeFragmentSequence)
                     std::vector<uint8_t>(payload.begin()+maxp, payload.begin()+maxp+25));
     auto f2 = frame(TRANSPORT_VERSION, TRANSPORT_FLAG_END, 0x1001, 2, 3,
                     std::vector<uint8_t>(payload.begin()+maxp+25, payload.end()));
-    transport_rx_bytes(&t, f0.data(), f0.size());
+    grlc_transport_rx_bytes(&t, f0.data(), f0.size());
     EXPECT_TRUE(cap.msg.empty());
-    transport_rx_bytes(&t, f1.data(), f1.size());
+    grlc_transport_rx_bytes(&t, f1.data(), f1.size());
     EXPECT_TRUE(cap.msg.empty());
-    transport_rx_bytes(&t, f2.data(), f2.size());
+    grlc_transport_rx_bytes(&t, f2.data(), f2.size());
     ASSERT_EQ(cap.msg.size(), payload.size());
 }
 
 TEST(TransportEdges, FragIndexMismatchDrops)
 {
     transport_ctx t{}; Cap cap{}; transport_lower_if lif{devnull_write};
-    transport_init(&t, &lif, on_msg, &cap);
+    grlc_transport_init(&t, &lif, on_msg, &cap);
     auto f0 = frame(TRANSPORT_VERSION, TRANSPORT_FLAG_START, 0x2002, 0, 2, {1,2});
     auto f_bad = frame(TRANSPORT_VERSION, TRANSPORT_FLAG_END, 0x2002, 2, 2, {3,4});
-    transport_rx_bytes(&t, f0.data(), f0.size());
-    transport_rx_bytes(&t, f_bad.data(), f_bad.size());
+    grlc_transport_rx_bytes(&t, f0.data(), f0.size());
+    grlc_transport_rx_bytes(&t, f_bad.data(), f_bad.size());
     EXPECT_TRUE(cap.msg.empty());
-    transport_stats s{}; transport_get_stats(&t, &s);
+    transport_stats s{}; grlc_transport_get_stats(&t, &s);
     EXPECT_EQ(s.messages_dropped, 1u);
 }
 
 TEST(TransportEdges, FragCountOverflowEndStillDelivers)
 {
     transport_ctx t{}; Cap cap{}; transport_lower_if lif{devnull_write};
-    transport_init(&t, &lif, on_msg, &cap);
+    grlc_transport_init(&t, &lif, on_msg, &cap);
     auto f0 = frame(TRANSPORT_VERSION, TRANSPORT_FLAG_START, 0x3003, 0, 2, {1});
     auto f1 = frame(TRANSPORT_VERSION, 0, 0x3003, 1, 2, {2});
     auto f2 = frame(TRANSPORT_VERSION, TRANSPORT_FLAG_END, 0x3003, 2, 2, {3});
-    transport_rx_bytes(&t, f0.data(), f0.size());
-    transport_rx_bytes(&t, f1.data(), f1.size());
-    transport_rx_bytes(&t, f2.data(), f2.size());
+    grlc_transport_rx_bytes(&t, f0.data(), f0.size());
+    grlc_transport_rx_bytes(&t, f1.data(), f1.size());
+    grlc_transport_rx_bytes(&t, f2.data(), f2.size());
     // Current implementation does not validate idx==cnt-1 on END; it delivers.
     ASSERT_EQ(cap.msg.size(), 3u);
 }
@@ -98,30 +98,30 @@ TEST(TransportEdges, FragCountOverflowEndStillDelivers)
 TEST(TransportEdges, InvalidPayloadLenHeaderDrop)
 {
     transport_ctx t{}; Cap cap{}; transport_lower_if lif{devnull_write};
-    transport_init(&t, &lif, on_msg, &cap);
+    grlc_transport_init(&t, &lif, on_msg, &cap);
     // Feed sync + header with payload_len beyond max
     uint8_t hdr[2 + 10] = {0xA5, 0x5A,
         TRANSPORT_VERSION, 0,
         0x34, 0x12, 0, 0, 1, 0,
         (uint8_t)((TRANSPORT_FRAME_MAX_PAYLOAD + 1) & 0xFF), (uint8_t)(((TRANSPORT_FRAME_MAX_PAYLOAD + 1) >> 8) & 0xFF)};
-    transport_rx_bytes(&t, hdr, sizeof(hdr));
-    transport_stats s{}; transport_get_stats(&t, &s);
+    grlc_transport_rx_bytes(&t, hdr, sizeof(hdr));
+    transport_stats s{}; grlc_transport_get_stats(&t, &s);
     EXPECT_EQ(s.frames_sync_drop, 1u);
 }
 
 TEST(TransportEdges, WrongVersionDroppedThenRecovers)
 {
     transport_ctx t{}; Cap cap{}; transport_lower_if lif{devnull_write};
-    transport_init(&t, &lif, on_msg, &cap);
+    grlc_transport_init(&t, &lif, on_msg, &cap);
     auto bad = frame(TRANSPORT_VERSION + 1, TRANSPORT_FLAG_START | TRANSPORT_FLAG_END, 0x4444, 0, 1, {9});
-    transport_rx_bytes(&t, bad.data(), bad.size());
+    grlc_transport_rx_bytes(&t, bad.data(), bad.size());
     EXPECT_TRUE(cap.msg.empty());
-    transport_stats s{}; transport_get_stats(&t, &s);
+    transport_stats s{}; grlc_transport_get_stats(&t, &s);
     // CRC verified before version check, so frames_ok increments; but no message delivered
     EXPECT_EQ(s.frames_ok, 1u);
     EXPECT_EQ(s.frames_sync_drop, 1u);
     auto ok = frame(TRANSPORT_VERSION, TRANSPORT_FLAG_START | TRANSPORT_FLAG_END, 0x4444, 0, 1, {7});
-    transport_rx_bytes(&t, ok.data(), ok.size());
+    grlc_transport_rx_bytes(&t, ok.data(), ok.size());
     EXPECT_EQ(cap.session, 0x4444);
     ASSERT_EQ(cap.msg.size(), 1u);
     EXPECT_EQ(cap.msg[0], 7);
@@ -130,7 +130,7 @@ TEST(TransportEdges, WrongVersionDroppedThenRecovers)
 TEST(TransportEdges, ReassemblyMaxExceeded)
 {
     transport_ctx t{}; Cap cap{}; transport_lower_if lif{devnull_write};
-    transport_init(&t, &lif, on_msg, &cap);
+    grlc_transport_init(&t, &lif, on_msg, &cap);
     // Build fragments to exceed TRANSPORT_REASSEMBLY_MAX
     const size_t maxp = TRANSPORT_FRAME_MAX_PAYLOAD;
     const size_t too_big = TRANSPORT_REASSEMBLY_MAX + 10;
@@ -144,10 +144,10 @@ TEST(TransportEdges, ReassemblyMaxExceeded)
         if (off + take >= payload.size()) flags |= TRANSPORT_FLAG_END; else flags |= TRANSPORT_FLAG_MIDDLE;
         auto f = frame(TRANSPORT_VERSION, flags, 0xABCD, idx, cnt,
                        std::vector<uint8_t>(payload.begin()+off, payload.begin()+off+take));
-        transport_rx_bytes(&t, f.data(), f.size());
+        grlc_transport_rx_bytes(&t, f.data(), f.size());
         off += take; idx++;
     }
     EXPECT_TRUE(cap.msg.empty());
-    transport_stats s{}; transport_get_stats(&t, &s);
+    transport_stats s{}; grlc_transport_get_stats(&t, &s);
     EXPECT_EQ(s.messages_dropped, 1u);
 }

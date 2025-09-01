@@ -18,7 +18,7 @@ extern "C" {
 /**
  * @brief Registers the BLE control command.
  */
-void command_register_ble_ctrl(void);
+void grlc_cmd_register_ble_ctrl(void);
 
 #ifdef __cplusplus
 }

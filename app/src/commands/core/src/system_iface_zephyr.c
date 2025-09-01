@@ -3,12 +3,12 @@
 #include <zephyr/kernel.h>
 #include "commands/inc/system_iface.h"
 
-uint64_t cmd_sys_uptime_ms(void)
+uint64_t grlc_sys_uptime_ms(void)
 {
     return (uint64_t)k_uptime_get();
 }
 
-size_t cmd_sys_flash_read(uint32_t addr, uint8_t *dst, size_t len)
+size_t grlc_sys_flash_read(uint32_t addr, uint8_t *dst, size_t len)
 {
 #if defined(CONFIG_FLASH)
     const struct device *flash = DEVICE_DT_GET(DT_CHOSEN(zephyr_flash_controller));

@@ -90,12 +90,14 @@ static bool reassemble_and_parse(const LowerCap& lc, std::vector<uint8_t>& out_p
 TEST(CommandGlueMore, UnknownCommandRespondsWithError)
 {
     LowerCap lc; g_cap = &lc; transport_lower_if lif{lc_write}; transport_ctx t{};
-    transport_init(&t, &lif, cmd_get_transport_cb(), &t);
-    cmd_transport_init(&t);
+    cmd_transport_binding b{};
+    grlc_transport_init(&t, &lif, grlc_cmd_get_transport_cb(), &b);
+    grlc_cmd_transport_bind(&b, &t);
+    grlc_cmd_transport_init();
 
     auto req = pack_req(0x7777, {});
     auto f = make_transport_frame(0x0BAD, 0, 1, req, TRANSPORT_FLAG_START | TRANSPORT_FLAG_END);
-    transport_rx_bytes(&t, f.data(), f.size());
+    grlc_transport_rx_bytes(&t, f.data(), f.size());
 
     ASSERT_FALSE(lc.frames.empty());
     std::vector<uint8_t> resp_msg;
@@ -109,8 +111,10 @@ TEST(CommandGlueMore, UnknownCommandRespondsWithError)
 TEST(CommandGlueMore, FragmentedEchoRoundTrip)
 {
     LowerCap lc; g_cap = &lc; transport_lower_if lif{lc_write}; transport_ctx t{};
-    transport_init(&t, &lif, cmd_get_transport_cb(), &t);
-    cmd_transport_init(&t);
+    cmd_transport_binding b{};
+    grlc_transport_init(&t, &lif, grlc_cmd_get_transport_cb(), &b);
+    grlc_cmd_transport_bind(&b, &t);
+    grlc_cmd_transport_init();
 
     // Build large echo payload to force fragmentation in both request and response
     const size_t maxp = TRANSPORT_FRAME_MAX_PAYLOAD;
@@ -120,8 +124,8 @@ TEST(CommandGlueMore, FragmentedEchoRoundTrip)
     auto f0 = make_transport_frame(0xCAFE, 0, 2, std::vector<uint8_t>(req.begin(), req.begin()+maxp), TRANSPORT_FLAG_START);
     auto f1 = make_transport_frame(0xCAFE, 1, 2, std::vector<uint8_t>(req.begin()+maxp, req.end()), TRANSPORT_FLAG_END);
 
-    transport_rx_bytes(&t, f0.data(), f0.size());
-    transport_rx_bytes(&t, f1.data(), f1.size());
+    grlc_transport_rx_bytes(&t, f0.data(), f0.size());
+    grlc_transport_rx_bytes(&t, f1.data(), f1.size());
 
     ASSERT_GE(lc.frames.size(), 2u); // response will be fragmented too
     std::vector<uint8_t> resp_msg;

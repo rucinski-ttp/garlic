@@ -36,10 +36,10 @@ TEST(TransportEncode, SingleFrame)
     transport_msg_cb cb = nullptr;
     struct transport_lower_if lif{lower_write_adapter};
     transport_ctx t{};
-    transport_init(&t, &lif, cb, nullptr);
+    grlc_transport_init(&t, &lif, cb, nullptr);
 
     uint8_t payload[] = {0xDE, 0xAD, 0xBE, 0xEF};
-    ASSERT_TRUE(transport_send_message(&t, 0x1234, payload, sizeof(payload), false));
+    ASSERT_TRUE(grlc_transport_send_message(&t, 0x1234, payload, sizeof(payload), false));
     ASSERT_EQ(lm.frames.size(), 1u);
 
     auto &f = lm.frames[0];
@@ -72,13 +72,13 @@ TEST(TransportEncode, Fragmentation)
     LowerMock lm; LowerMock::lower_cookie = &lm;
     struct transport_lower_if lif{lower_write_adapter};
     transport_ctx t{};
-    transport_init(&t, &lif, nullptr, nullptr);
+    grlc_transport_init(&t, &lif, nullptr, nullptr);
 
     // Make payload larger than max payload per frame
     const size_t maxp = TRANSPORT_FRAME_MAX_PAYLOAD;
     std::vector<uint8_t> payload(maxp * 2 + 5);
     for (size_t i = 0; i < payload.size(); ++i) payload[i] = (uint8_t)i;
-    ASSERT_TRUE(transport_send_message(&t, 0xBEEF, payload.data(), payload.size(), true));
+    ASSERT_TRUE(grlc_transport_send_message(&t, 0xBEEF, payload.data(), payload.size(), true));
 
     // Expect 3 frames
     ASSERT_EQ(lm.frames.size(), 3u);

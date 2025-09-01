@@ -41,8 +41,10 @@ TEST(CommandGlue, RequestProducesResponse)
     LowerCapture lc; g_cap = &lc;
     transport_lower_if lif{lc_write};
     transport_ctx t{};
-    transport_init(&t, &lif, cmd_get_transport_cb(), &t);
-    cmd_transport_init(&t);
+    cmd_transport_binding b{};
+    grlc_transport_init(&t, &lif, grlc_cmd_get_transport_cb(), &b);
+    grlc_cmd_transport_bind(&b, &t);
+    grlc_cmd_transport_init();
 
     // Build one payload: GET_GIT_VERSION with no payload
     auto req = pack_req(CMD_ID_GET_GIT_VERSION, {});
@@ -67,7 +69,7 @@ TEST(CommandGlue, RequestProducesResponse)
     frame.push_back((uint8_t)((crc >> 16) & 0xFF));
     frame.push_back((uint8_t)((crc >> 24) & 0xFF));
 
-    transport_rx_bytes(&t, frame.data(), frame.size());
+    grlc_transport_rx_bytes(&t, frame.data(), frame.size());
 
     // Expect at least one outbound response frame written
     ASSERT_FALSE(lc.frames.empty());

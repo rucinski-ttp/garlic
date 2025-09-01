@@ -2,7 +2,7 @@
 #include <zephyr/drivers/i2c.h>
 #include <zephyr/kernel.h>
 
-#include "drivers/i2c_async/inc/i2c_async.h"
+#include "drivers/i2c/inc/i2c.h"
 
 static const struct device *i2c_dev;
 
@@ -11,7 +11,7 @@ struct i2c_req_ctx {
     volatile int result;
 };
 
-int i2c_async_init(void)
+int grlc_i2c_init(void)
 {
     /* Default to &i2c0 for nRF52-DK overlay */
     i2c_dev = DEVICE_DT_GET(DT_NODELABEL(i2c0));
@@ -23,7 +23,7 @@ int i2c_async_init(void)
     return 0;
 }
 
-int i2c_async_write(uint16_t addr, const uint8_t *data, size_t len, i2c_async_cb_t cb, void *user)
+int grlc_i2c_write(uint16_t addr, const uint8_t *data, size_t len, i2c_async_cb_t cb, void *user)
 {
     if (!i2c_dev || !data || len == 0)
         return -EINVAL;
@@ -44,7 +44,7 @@ int i2c_async_write(uint16_t addr, const uint8_t *data, size_t len, i2c_async_cb
     return 0;
 }
 
-int i2c_async_read(uint16_t addr, uint8_t *data, size_t len, i2c_async_cb_t cb, void *user)
+int grlc_i2c_read(uint16_t addr, uint8_t *data, size_t len, i2c_async_cb_t cb, void *user)
 {
     if (!i2c_dev || !data || len == 0)
         return -EINVAL;
@@ -65,8 +65,8 @@ int i2c_async_read(uint16_t addr, uint8_t *data, size_t len, i2c_async_cb_t cb, 
     return 0;
 }
 
-int i2c_async_write_read(uint16_t addr, const uint8_t *wdata, size_t wlen, uint8_t *rdata,
-                         size_t rlen, i2c_async_cb_t cb, void *user)
+int grlc_i2c_write_read(uint16_t addr, const uint8_t *wdata, size_t wlen, uint8_t *rdata,
+                        size_t rlen, i2c_async_cb_t cb, void *user)
 {
     if (!i2c_dev || !wdata || wlen == 0 || !rdata || rlen == 0)
         return -EINVAL;
@@ -95,6 +95,12 @@ int i2c_async_write_read(uint16_t addr, const uint8_t *wdata, size_t wlen, uint8
 }
 
 /* Blocking wrappers */
+/**
+ * @brief Wait for a semaphore with millisecond timeout.
+ * @param sem        Semaphore to take.
+ * @param timeout_ms Timeout in milliseconds (<=0 for no wait, <0 for forever).
+ * @return 0 on success, negative on timeout.
+ */
 static int wait_sem(struct k_sem *sem, int timeout_ms)
 {
     if (timeout_ms < 0)
@@ -103,6 +109,11 @@ static int wait_sem(struct k_sem *sem, int timeout_ms)
     return k_sem_take(sem, to);
 }
 
+/**
+ * @brief Bridge async callback into blocking request context.
+ * @param result Result code from async transfer.
+ * @param user   Pointer to i2c_req_ctx with semaphore to release.
+ */
 static void bridge_cb(int result, void *user)
 {
     struct i2c_req_ctx *ctx = (struct i2c_req_ctx *)user;
@@ -112,12 +123,12 @@ static void bridge_cb(int result, void *user)
     }
 }
 
-int i2c_blocking_write(uint16_t addr, const uint8_t *data, size_t len, int timeout_ms)
+int grlc_i2c_blocking_write(uint16_t addr, const uint8_t *data, size_t len, int timeout_ms)
 {
     struct i2c_req_ctx ctx;
     k_sem_init(&ctx.done, 0, 1);
     ctx.result = -EIO;
-    int rc = i2c_async_write(addr, data, len, bridge_cb, &ctx);
+    int rc = grlc_i2c_write(addr, data, len, bridge_cb, &ctx);
     if (rc)
         return rc;
     if (wait_sem(&ctx.done, timeout_ms) != 0)
@@ -125,12 +136,12 @@ int i2c_blocking_write(uint16_t addr, const uint8_t *data, size_t len, int timeo
     return ctx.result;
 }
 
-int i2c_blocking_read(uint16_t addr, uint8_t *data, size_t len, int timeout_ms)
+int grlc_i2c_blocking_read(uint16_t addr, uint8_t *data, size_t len, int timeout_ms)
 {
     struct i2c_req_ctx ctx;
     k_sem_init(&ctx.done, 0, 1);
     ctx.result = -EIO;
-    int rc = i2c_async_read(addr, data, len, bridge_cb, &ctx);
+    int rc = grlc_i2c_read(addr, data, len, bridge_cb, &ctx);
     if (rc)
         return rc;
     if (wait_sem(&ctx.done, timeout_ms) != 0)
@@ -138,13 +149,13 @@ int i2c_blocking_read(uint16_t addr, uint8_t *data, size_t len, int timeout_ms)
     return ctx.result;
 }
 
-int i2c_blocking_write_read(uint16_t addr, const uint8_t *wdata, size_t wlen, uint8_t *rdata,
-                            size_t rlen, int timeout_ms)
+int grlc_i2c_blocking_write_read(uint16_t addr, const uint8_t *wdata, size_t wlen, uint8_t *rdata,
+                                 size_t rlen, int timeout_ms)
 {
     struct i2c_req_ctx ctx;
     k_sem_init(&ctx.done, 0, 1);
     ctx.result = -EIO;
-    int rc = i2c_async_write_read(addr, wdata, wlen, rdata, rlen, bridge_cb, &ctx);
+    int rc = grlc_i2c_write_read(addr, wdata, wlen, rdata, rlen, bridge_cb, &ctx);
     if (rc)
         return rc;
     if (wait_sem(&ctx.done, timeout_ms) != 0)
@@ -152,20 +163,20 @@ int i2c_blocking_write_read(uint16_t addr, const uint8_t *wdata, size_t wlen, ui
     return ctx.result;
 }
 
-int i2c_bus_recover(void)
+int grlc_i2c_bus_recover(void)
 {
     if (!i2c_dev) {
-        int rc = i2c_async_init();
+        int rc = grlc_i2c_init();
         if (rc)
             return rc;
     }
     return i2c_recover_bus(i2c_dev);
 }
 
-int i2c_ping(uint16_t addr)
+int grlc_i2c_ping(uint16_t addr)
 {
     if (!i2c_dev) {
-        int rc = i2c_async_init();
+        int rc = grlc_i2c_init();
         if (rc)
             return rc;
     }

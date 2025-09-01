@@ -15,11 +15,19 @@ extern "C" {
 #endif
 
 /**
- * @brief Enter fatal state with message.
+ * @brief Enter fatal state with message (namespaced API).
  *
- * Prints the message to RTT and UART (DMA) if available, then loops forever.
+ * Prints the message to RTT and UART (DMA) if available, then loops forever
+ * (Zephyr build) or aborts the process (host build). This function never
+ * returns on Zephyr.
  *
- * @param msg Null-terminated message string.
+ * @param msg Null-terminated message string (may be NULL).
+ */
+void grlc_assert_fatal(const char *msg);
+
+/**
+ * @brief Deprecated alias for grlc_assert_fatal.
+ * @deprecated Use grlc_assert_fatal() instead to follow naming convention.
  */
 void project_fatal(const char *msg);
 
@@ -31,7 +39,7 @@ void project_fatal(const char *msg);
 #define PROJECT_ASSERT(cond, msg)                                                                  \
     do {                                                                                           \
         if (!(cond)) {                                                                             \
-            project_fatal(msg);                                                                    \
+            grlc_assert_fatal(msg);                                                                \
         }                                                                                          \
     } while (0)
 
